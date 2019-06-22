@@ -1,0 +1,16 @@
+[package]
+name = "acwars"
+version = "0.0.1"
+authors = ["Lilith645 <lilith@inet-sys.com>"]
+edition = "2018"
+
+[dependencies]
+maat_graphics = { path = "./Maat-Graphics/" }
+maat_input_handler = { path = "./Maat-InputHandler/" }
+#maat_sound = { path = "./Maat-Sound/" }
+rand = "0.6"
+hlua = "*"
+
+[dependencies.cgmath]
+version = "0.17.0"
+features = ["swizzle"]
