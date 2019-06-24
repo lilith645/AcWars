@@ -1,9 +1,10 @@
 use crate::modules::abilities::{Ability, AbilityData};
-use crate::modules::Ship;
-use crate::modules::projectiles::Ftpl;
+use crate::modules::entities::Entity;
+use crate::modules::projectiles::{Projectile, Gob};
 
 use cgmath::{Vector2, InnerSpace};
 
+#[derive(Clone)]
 pub struct SingleShot {
   data: AbilityData,
 }
@@ -25,15 +26,20 @@ impl Ability for SingleShot {
     &mut self.data
   }
   
-  fn applied_to(&self, ship: &mut Ship, mut mouse_pos: Vector2<f32>, window_size: Vector2<f32>) {
+  fn apply_passive_effect(&self, projectile: &mut Box<Projectile>) {
+    
+  }
+  
+  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>) {
     let ship_pos = ship.position();
     let ship_size = ship.size();
-    let ship_offset = ship_pos-window_size*0.5;
-    mouse_pos += ship_offset;
     
-    let proj_dir = (mouse_pos-ship_pos).normalize();
+    let proj_dir = (target-ship_pos).normalize();
     
-    let projectile = Ftpl::new(ship_pos, ship_size*0.5, proj_dir);
-    ship.fire_projectile(Box::new(projectile));
+    let mut projectile: Box<Projectile> = Box::new(Gob::new(ship_pos, ship_size*0.5, proj_dir));
+    
+    self.apply_passive_abilities(&mut projectile);
+    
+    ship.fire_projectile(projectile);
   }
 }

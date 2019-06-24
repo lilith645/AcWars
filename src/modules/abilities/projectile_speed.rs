@@ -1,23 +1,23 @@
 use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
-use crate::modules::projectiles::Projectile;
+use crate::modules::projectiles::{Projectile};
 
 use cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
-pub struct Move {
+pub struct ProjectileSpeed {
   data: AbilityData,
 }
 
-impl Move {
-  pub fn new() -> Move {
-    Move {
-      data: AbilityData::new_active(0.001),
+impl ProjectileSpeed {
+  pub fn new() -> ProjectileSpeed {
+    ProjectileSpeed {
+      data: AbilityData::new_passive(0.0),
     }
   }
 }
 
-impl Ability for Move {
+impl Ability for ProjectileSpeed {
   fn data(&self) -> &AbilityData {
     &self.data
   }
@@ -27,14 +27,10 @@ impl Ability for Move {
   }
   
   fn apply_passive_effect(&self, projectile: &mut Box<Projectile>) {
-    
+    projectile.multiply_velocity(1.2);
   }
   
   fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>) {
-    let ship_pos = ship.position();
     
-    let direction = (target-ship_pos).normalize();
-    
-    ship.apply_velocity_in_direction(direction);
   }
 }

@@ -1,23 +1,23 @@
 use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
-use crate::modules::projectiles::Projectile;
+use crate::modules::projectiles::{Projectile, LaserBeam};
 
 use cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
-pub struct Move {
+pub struct Laser {
   data: AbilityData,
 }
 
-impl Move {
-  pub fn new() -> Move {
-    Move {
-      data: AbilityData::new_active(0.001),
+impl Laser {
+  pub fn new() -> Laser {
+    Laser {
+      data: AbilityData::new_active(1.25),
     }
   }
 }
 
-impl Ability for Move {
+impl Ability for Laser {
   fn data(&self) -> &AbilityData {
     &self.data
   }
@@ -32,9 +32,14 @@ impl Ability for Move {
   
   fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>) {
     let ship_pos = ship.position();
+    let ship_size = ship.size();
     
-    let direction = (target-ship_pos).normalize();
+    let proj_dir = (target-ship_pos).normalize();
     
-    ship.apply_velocity_in_direction(direction);
+    let mut projectile: Box<Projectile> = Box::new(LaserBeam::new(ship_pos, ship_size*0.5, proj_dir));
+    
+    self.apply_passive_abilities(&mut projectile);
+    
+    ship.fire_projectile(projectile);
   }
 }

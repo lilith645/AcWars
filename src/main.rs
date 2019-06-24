@@ -53,11 +53,21 @@ fn main() {
   
  // graphics.create_instance_buffer("Ftpl".to_string());
   
+  // Ships
   graphics.preload_texture("Bulbz".to_string(), "./resources/textures/ships/Bulbz.png".to_string());
+  graphics.preload_texture("Brew".to_string(), "./resources/textures/ships/Brew.png".to_string());
+  // Projectiles
   graphics.preload_texture("Ftpl".to_string(), "./resources/textures/projectiles/Ftpl.png".to_string());
+  graphics.preload_texture("Gob".to_string(), "./resources/textures/projectiles/Gob.png".to_string());
+  graphics.preload_texture("LaserBeam".to_string(), "./resources/textures/projectiles/laserbeam.png".to_string());
+  
   graphics.preload_texture("bg_space".to_string(), "./resources/textures/backgrounds/space_tileable.png".to_string());
   
   graphics.create_instance_buffer("Ftpl".to_string());
+  graphics.create_instance_buffer("Gob".to_string());
+  graphics.create_instance_buffer("Bulbz".to_string());
+  graphics.create_instance_buffer("Brew".to_string());
+  graphics.create_instance_buffer("LaserBeam".to_string());
   
   graphics.load_shaders();
   

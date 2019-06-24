@@ -1,10 +1,18 @@
 pub use ftpl::Ftpl;
+pub use gob::Gob;
+pub use laser_beam::LaserBeam;
 
+mod gob;
 mod ftpl;
+mod laser_beam;
 
 use maat_graphics::DrawCall;
+use maat_graphics::math;
 
-use cgmath::{Vector2, Vector3};
+use crate::modules::Animation;
+use crate::modules::entities::Entity;
+
+use cgmath::{Vector2, Vector3, Vector4};
 
 #[derive(Clone)]
 pub struct ProjectileData {
@@ -14,10 +22,11 @@ pub struct ProjectileData {
   texture: String,
   velocity: Vector2<f32>,
   acceleration: Vector2<f32>,
-  animation_sprite_rows: i32,
-  animation_timer: f32,
-  animation_frame: i32,
-  animation_total_time: f32,
+  animation: Animation,
+  damage: f32,
+  hostile: bool,
+  lifetime_left: f32,
+  should_exist: bool,
 }
 
 impl ProjectileData {
@@ -29,10 +38,11 @@ impl ProjectileData {
       texture: "".to_string(),
       velocity: Vector2::new(0.0, 0.0),
       acceleration: Vector2::new(0.0, 0.0),
-      animation_sprite_rows: 1,
-      animation_timer: 1.0,
-      animation_frame: 0,
-      animation_total_time: 0.0,
+      animation: Animation::new(1, 1.0),
+      damage: 1.0,
+      hostile: false,
+      lifetime_left: 5.0,
+      should_exist: true,
     }
   }
   
@@ -44,10 +54,11 @@ impl ProjectileData {
       texture: texture.to_string(),
       velocity: Vector2::new(0.0, 0.0),
       acceleration: Vector2::new(0.0, 0.0),
-      animation_sprite_rows: sprite_rows,
-      animation_timer,
-      animation_frame: 0,
-      animation_total_time: 0.0,
+      animation: Animation::new(sprite_rows, animation_timer),
+      damage: 1.0,
+      hostile: false,
+      lifetime_left: 5.0,
+      should_exist: true,
     }
   }
   
@@ -61,8 +72,33 @@ impl ProjectileData {
     self
   }
   
+  pub fn with_damage(mut self, dmg: f32) -> ProjectileData {
+    self.damage = dmg;
+    self
+  }
+  
+  pub fn with_total_frames(mut self, total_frames: i32) -> ProjectileData {
+    self.animation = self.animation.with_total_frames(total_frames);
+    self
+  }
+  
   pub fn with_acceleration(mut self, acc: Vector2<f32>) -> ProjectileData {
     self.acceleration = acc;
+    self
+  }
+  
+  pub fn animate_backwards(mut self) -> ProjectileData {
+    self.animation = self.animation.animate_backwards();
+    self
+  }
+  
+  pub fn animate_forwards_then_backwards(mut self) -> ProjectileData {
+    self.animation = self.animation.animate_forwards_then_backwards();
+    self
+  }
+  
+  pub fn animate_backwards_then_forwards(mut self) -> ProjectileData {
+    self.animation = self.animation.animate_backwards_then_forwards();
     self
   }
 }
@@ -87,41 +123,92 @@ pub trait Projectile: ProjectileClone {
   fn data(&self) -> &ProjectileData;
   fn mut_data(&mut self) -> &mut ProjectileData;
   
+  // Vec2<offset>, radius
+  fn collision_information(&self) -> Vec<(Vector2<f32>, f32)>;
+  
   fn update(&mut self, delta_time: f32);
   
-  fn physics(&mut self, delta_time: f32) {
-    self.mut_data().position += self.data().velocity*delta_time;
-    self.mut_data().velocity += self.data().acceleration*delta_time*delta_time;
+  fn should_exist(&self) -> bool {
+    self.data().should_exist
   }
   
-  fn animate(&mut self, delta_time: f32) {
-    self.mut_data().animation_total_time += delta_time;
+  fn hostile(&self) -> bool {
+    self.data().hostile
+  }
+  
+  fn collision_circles(&self) -> Vec<Vector3<f32>> {
+    let information = self.collision_information();
     
-    if self.data().animation_total_time > self.data().animation_timer {
-      self.mut_data().animation_frame += 1;
-      if self.data().animation_frame >= self.data().animation_sprite_rows*self.data().animation_sprite_rows {
-        self.mut_data().animation_frame = 0
+    let mut projectile_circles = Vec::new();
+    
+    let projectile_position = self.data().position;
+    
+    for (offset, radius) in information {
+      let projectile_radius = radius;
+      let projectile_circle = (projectile_position+offset).extend(projectile_radius);
+      projectile_circles.push(projectile_circle);
+    }
+    
+    projectile_circles
+  }
+  
+  fn multiply_velocity(&mut self, factor: f32) {
+    self.mut_data().velocity *= factor;
+  }
+  
+  fn make_hostile(&mut self) {
+    self.mut_data().hostile = true;
+  }
+  
+  fn lifetime_decay(&mut self, delta_time: f32) {
+    self.mut_data().lifetime_left -= delta_time;
+    if self.data().lifetime_left <= 0.0 {
+      self.mut_data().should_exist = false;
+    }
+  }
+  
+  fn collide_with(&mut self, entity: &mut Box<Entity>) {
+    let entity_circles = entity.collision_circles();
+    let projectile_circles = self.collision_circles();
+    
+    let mut collided = false;
+    
+    for e_circle in entity_circles {
+      for p_circle in &projectile_circles {
+        if math::circle_collision(e_circle, *p_circle) {
+          entity.hit(self.data().damage);
+          self.mut_data().should_exist = false;
+          collided = true;
+          break;
+        }
       }
-      self.mut_data().animation_total_time -= self.data().animation_timer;
+      if collided { break; }
     }
   }
   
+  fn physics(&mut self, delta_time: f32) {
+    let velocity = self.data().velocity;
+    let acceleration = self.data().acceleration;
+    self.mut_data().position += velocity*delta_time;
+    self.mut_data().velocity += acceleration*delta_time*delta_time;
+  }
+
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
-    let sprite_sheet_rows = self.data().animation_sprite_rows;
+    self.data().animation.draw(self.data().position, self.data().size, 
+                               self.data().rotation, self.data().texture.to_string(), draw_calls);
+  }
+  
+  fn draw_collision_circles(&self, draw_calls: &mut Vec<DrawCall>) {
+    let circles = self.collision_circles();
     
-    let x = self.data().animation_frame % sprite_sheet_rows;
-    let mut y = 0;
-    if self.data().animation_frame-x == sprite_sheet_rows {
-      y = 1;
-    }
-    if self.data().animation_frame-x == sprite_sheet_rows*2 {
-      y = 2;
-    }
+    let colour = if self.data().hostile {
+      Vector4::new(1.0, 0.0, 0.0, 1.0)
+    } else {
+      Vector4::new(0.0, 0.0, 1.0, 1.0)
+    };
     
-  /*  draw_calls.push(DrawCall::draw_sprite_sheet(self.data().position, self.data().size, self.data().rotation, 
-                                                self.data().texture.to_string(), Vector3::new(x,y, sprite_sheet_rows)));
-    */
-     draw_calls.push(DrawCall::add_instanced_sprite_sheet(self.data().position, self.data().size, self.data().rotation, 
-                                                self.data().texture.to_string(), Vector3::new(x,y, sprite_sheet_rows)));
+    for circle in &circles {
+      draw_calls.push(DrawCall::draw_coloured(circle.xy(), Vector2::new(circle.z, circle.z), colour, 0.0));
+    }
   }
 }

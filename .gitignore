@@ -23,7 +23,7 @@ src/obj/*
 .vs/
 x64/
 ~*
-
+*.ini
 
 
 Trephination.iml
