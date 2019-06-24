@@ -1,6 +1,6 @@
 use crate::modules::entities::Entity;
 use crate::modules::controllers::{EntityController, EntityControllerData};
-use crate::modules::abilities::DoubleShot;
+use crate::modules::abilities::SingleShot;
 
 use cgmath::Vector2;
 
@@ -13,7 +13,7 @@ impl AbilitySpamAi {
   pub fn new() -> AbilitySpamAi {
     AbilitySpamAi {
       data: EntityControllerData::new()
-                                  .with_ability(Box::new(DoubleShot::new())) 
+                                  .with_ability(Box::new(SingleShot::new())) 
     }
   }
 }

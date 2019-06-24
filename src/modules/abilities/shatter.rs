@@ -19,15 +19,6 @@ impl Shatter {
   }
 }
 
-fn rotate_vector2(direction: Vector2<f32>, angle: f32) -> Vector2<f32> {
-  let radians = math::to_radians(angle);
-  
-  let cos = radians.cos();
-  let sin = radians.sin();
-  
-  Vector2::new(direction.x*cos - direction.y*sin, direction.x*sin + direction.y*cos)
-}
-
 impl Ability for Shatter {
   fn data(&self) -> &AbilityData {
     &self.data
@@ -61,8 +52,8 @@ impl Ability for Shatter {
     let half_projectiles = (num_projectiles as f32*0.5).floor() as usize;
     
     for i in 0..half_projectiles {
-      let dir1 = rotate_vector2(proj_dir,  (i+1) as f32 *  arc_increment);
-      let dir2 = rotate_vector2(proj_dir,  (i+1) as f32 * -arc_increment);
+      let dir1 = math::rotate_vector2(proj_dir,  (i+1) as f32 *  arc_increment);
+      let dir2 = math::rotate_vector2(proj_dir,  (i+1) as f32 * -arc_increment);
       
       projectiles.push(Box::new(Ftpl::new(ship_pos, ship_size*0.5, dir1)));
       projectiles.push(Box::new(Ftpl::new(ship_pos, ship_size*0.5, dir2)));

@@ -23,6 +23,8 @@ pub struct EntityData {
   acceleration: Vector2<f32>,
   inertia: f32,
   health: f32,
+  shield: f32,
+  initial_health: f32,
   projectiles: Vec<Box<Projectile>>,
   hostile: bool,
   should_exist: bool,
@@ -40,6 +42,8 @@ impl EntityData {
       acceleration: Vector2::new(0.0, 0.0),
       inertia: 0.33,
       health: 100.0,
+      shield: 0.0,
+      initial_health: 100.0,
       projectiles: Vec::new(),
       hostile: false,
       should_exist: true,
@@ -57,6 +61,8 @@ impl EntityData {
       acceleration: Vector2::new(0.0, 0.0),
       inertia: 0.33,
       health: 100.0,
+      shield: 0.0,
+      initial_health: 100.0,
       projectiles: Vec::new(),
       hostile: false,
       should_exist: true,
@@ -85,6 +91,7 @@ impl EntityData {
   
   pub fn with_health(mut self, health: f32) -> EntityData {
     self.health = health;
+    self.initial_health = health;
     self
   }
   
@@ -146,8 +153,23 @@ pub trait Entity: EntityClone {
     entity_circles
   }
   
+  fn gain_shield(&mut self, shield_value: f32) {
+    self.mut_data().shield += shield_value;
+  }
+  
   fn hit(&mut self, damage: f32) {
-    self.mut_data().health -= damage;
+    if self.data().shield > 0.0 {
+      if self.data().shield < damage {
+        self.mut_data().shield -= damage;
+        self.mut_data().health += self.data().shield;
+        self.mut_data().shield = 0.0;
+      } else {
+        self.mut_data().shield -= damage;
+      }
+    } else {
+      self.mut_data().health -= damage;
+    }
+    
     if self.data().health <= 0.0 {
       self.mut_data().should_exist = false;
       self.mut_data().health = 0.0;
@@ -199,6 +221,19 @@ pub trait Entity: EntityClone {
     self.mut_data().projectiles.clear();
     
     projectiles
+  }
+  
+  fn draw_ship_ui(&self, draw_calls: &mut Vec<DrawCall>) {
+    let ship_size = self.data().size;
+    
+    let position = self.data().position + Vector2::new(0.0, ship_size.y*0.5);
+    let size = Vector2::new(40.0*(self.data().health / self.data().initial_health), 10.0);
+    let colour = Vector4::new(0.0, 1.0, 0.0, 0.5);
+    draw_calls.push(DrawCall::draw_coloured(position, size, colour, 0.0));
+    
+    let size = Vector2::new(40.0*(self.data().shield / self.data().initial_health), 15.0);
+    let colour = Vector4::new(0.0, 0.0, 1.0, 0.5);
+    draw_calls.push(DrawCall::draw_coloured(position, size, colour, 0.0));
   }
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {

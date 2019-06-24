@@ -3,6 +3,7 @@ pub use doubleshot::DoubleShot;
 pub use movement::Move;
 pub use laser::Laser;
 pub use shatter::Shatter;
+pub use shield::Shield;
 
 pub use projectile_speed::ProjectileSpeed;
 
@@ -10,6 +11,7 @@ pub use projectile_speed::ProjectileSpeed;
 mod singleshot;
 mod doubleshot;
 mod laser;
+mod shield;
 
 // passives
 mod projectile_speed;

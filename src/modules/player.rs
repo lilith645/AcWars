@@ -1,5 +1,6 @@
 use crate::modules::entities::Entity;
-use crate::modules::abilities::{Ability, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed, Shatter};
+use crate::modules::abilities::{Ability, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed, 
+                                Shatter, Shield};
 
 use cgmath::Vector2;
 
@@ -22,7 +23,7 @@ pub struct Input {
 impl Input {
   pub fn new() -> Input {
     let mut input = Input {
-      left_click_ability: Some(Box::new(SingleShot::new())),
+      left_click_ability: Some(Box::new(Shield::new())),
       middle_click_ability: Some(Box::new(DoubleShot::new())),
       right_click_ability: Some(Box::new(Move::new())),
     };

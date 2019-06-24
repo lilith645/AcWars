@@ -164,7 +164,7 @@ impl Scene for BattleScreen {
       projectile.draw(draw_calls);
     }
     
-    for (controller, hostile) in &self.hostiles {
+    for (_controller, hostile) in &self.hostiles {
       hostile.draw(draw_calls);
     }
     
@@ -175,6 +175,12 @@ impl Scene for BattleScreen {
     draw_calls.push(DrawCall::draw_instanced("Brew".to_string(), "Brew".to_string()));
     draw_calls.push(DrawCall::draw_instanced("LaserBeam".to_string(), "LaserBeam".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Bulbz".to_string(), "Bulbz".to_string()));
+    
+    for (_controller, hostile) in &self.hostiles {
+      hostile.draw_ship_ui(draw_calls);
+    }
+    
+    self.ship.draw_ship_ui(draw_calls);
     
     /*
     for projectile in &self.projectiles {
