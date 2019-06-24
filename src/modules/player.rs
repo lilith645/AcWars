@@ -1,5 +1,5 @@
 use crate::modules::entities::Entity;
-use crate::modules::abilities::{Ability, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed};
+use crate::modules::abilities::{Ability, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed, Shatter};
 
 use cgmath::Vector2;
 
@@ -27,8 +27,8 @@ impl Input {
       right_click_ability: Some(Box::new(Move::new())),
     };
     
-    if let Some(middle_click_ability) = &mut input.middle_click_ability {
-      middle_click_ability.add_passive(Box::new(ProjectileSpeed::new()));
+    if let Some(left_click_ability) = &mut input.left_click_ability {
+      left_click_ability.add_passive(Box::new(Shatter::new()));
     }
     
     input

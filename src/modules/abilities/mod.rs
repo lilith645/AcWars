@@ -2,13 +2,20 @@ pub use singleshot::SingleShot;
 pub use doubleshot::DoubleShot;
 pub use movement::Move;
 pub use laser::Laser;
+pub use shatter::Shatter;
 
 pub use projectile_speed::ProjectileSpeed;
 
+// actives
 mod singleshot;
 mod doubleshot;
 mod laser;
+
+// passives
 mod projectile_speed;
+mod shatter;
+
+// other
 mod movement;
 
 use crate::modules::entities::Entity;

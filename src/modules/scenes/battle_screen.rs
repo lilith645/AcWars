@@ -27,7 +27,14 @@ impl BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
       input: player::Input::new(),
       ship: Box::new(Ship::new()),
-      hostiles: vec!((Box::new(AbilitySpamAi::new()), Box::new(Brew::new().as_hostile()))),
+      hostiles: vec!(
+                     (Box::new(AbilitySpamAi::new()), Box::new(Brew::new().as_hostile()
+                                                                          .with_position(Vector2::new(640.0, 1500.0)))),
+                     (Box::new(AbilitySpamAi::new()), Box::new(Brew::new().as_hostile()
+                                                                          .with_position(Vector2::new(740.0, 1500.0)))),
+                     (Box::new(AbilitySpamAi::new()), Box::new(Brew::new().as_hostile()
+                                                                          .with_position(Vector2::new(840.0, 1500.0))))
+                    ),
       projectiles: Vec::new(),
     }
   }
@@ -169,13 +176,13 @@ impl Scene for BattleScreen {
     draw_calls.push(DrawCall::draw_instanced("LaserBeam".to_string(), "LaserBeam".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Bulbz".to_string(), "Bulbz".to_string()));
     
-    
+    /*
     for projectile in &self.projectiles {
       projectile.draw_collision_circles(draw_calls);
     }
     for (controller, hostile) in &self.hostiles {
       hostile.draw_collision_circles(draw_calls);
     }
-    self.ship.draw_collision_circles(draw_calls);
+    self.ship.draw_collision_circles(draw_calls);*/
   }
 }

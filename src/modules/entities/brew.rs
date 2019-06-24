@@ -23,6 +23,11 @@ impl Brew {
     }
   }
   
+  pub fn with_position(mut self, position: Vector2<f32>) -> Brew {
+    self.data.position = position;
+    self
+  }
+  
   pub fn as_hostile(mut self) -> Brew {
     self.data = self.data.as_hostile();
     self

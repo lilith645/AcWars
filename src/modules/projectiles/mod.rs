@@ -11,6 +11,7 @@ use maat_graphics::math;
 
 use crate::modules::Animation;
 use crate::modules::entities::Entity;
+use crate::modules::abilities::Ability;
 
 use cgmath::{Vector2, Vector3, Vector4};
 
@@ -25,8 +26,10 @@ pub struct ProjectileData {
   animation: Animation,
   damage: f32,
   hostile: bool,
+  hostility_locked: bool,
   lifetime_left: f32,
   should_exist: bool,
+  passives: Vec<Box<Ability>>,
 }
 
 impl ProjectileData {
@@ -41,8 +44,10 @@ impl ProjectileData {
       animation: Animation::new(1, 1.0),
       damage: 1.0,
       hostile: false,
+      hostility_locked: false,
       lifetime_left: 5.0,
       should_exist: true,
+      passives: Vec::new(),
     }
   }
   
@@ -57,8 +62,10 @@ impl ProjectileData {
       animation: Animation::new(sprite_rows, animation_timer),
       damage: 1.0,
       hostile: false,
+      hostility_locked: false,
       lifetime_left: 5.0,
       should_exist: true,
+      passives: Vec::new(),
     }
   }
   
@@ -152,12 +159,22 @@ pub trait Projectile: ProjectileClone {
     projectile_circles
   }
   
+  fn lock_hostility(&mut self) {
+    self.mut_data().hostility_locked = true;
+  }
+  
   fn multiply_velocity(&mut self, factor: f32) {
     self.mut_data().velocity *= factor;
   }
   
   fn make_hostile(&mut self) {
-    self.mut_data().hostile = true;
+    if !self.data().hostility_locked { 
+      self.mut_data().hostile = true;
+    }
+  }
+  
+  fn add_passive(&mut self, passive: Box<Ability>) {
+    self.mut_data().passives.push(passive);
   }
   
   fn lifetime_decay(&mut self, delta_time: f32) {
@@ -177,6 +194,14 @@ pub trait Projectile: ProjectileClone {
       for p_circle in &projectile_circles {
         if math::circle_collision(e_circle, *p_circle) {
           entity.hit(self.data().damage);
+          
+          let pos = self.data().position;
+          let vel = self.data().velocity;
+          
+          for passive in &mut self.mut_data().passives {
+            passive.applied_to(entity, pos+vel, Vector2::new(0.0, 0.0));
+          }
+          
           self.mut_data().should_exist = false;
           collided = true;
           break;
