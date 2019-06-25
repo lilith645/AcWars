@@ -1,6 +1,6 @@
 use crate::modules::entities::Entity;
 use crate::modules::abilities::{Ability, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed, 
-                                Shatter, Shield};
+                                Shatter, Shield, Dash};
 
 use cgmath::Vector2;
 
@@ -18,14 +18,16 @@ pub struct Input {
   left_click_ability: Option<Box<Ability>>,
   middle_click_ability: Option<Box<Ability>>,
   right_click_ability: Option<Box<Ability>>,
+  ability_one: Option<Box<Ability>>,
 }
 
 impl Input {
   pub fn new() -> Input {
     let mut input = Input {
-      left_click_ability: Some(Box::new(Shield::new())),
-      middle_click_ability: Some(Box::new(DoubleShot::new())),
-      right_click_ability: Some(Box::new(Move::new())),
+      left_click_ability: Some(Box::new(Move::new())),
+      middle_click_ability: Some(Box::new(Shield::new())),
+      right_click_ability: Some(Box::new(DoubleShot::new())),
+      ability_one: Some(Box::new(Dash::new())),
     };
     
     if let Some(left_click_ability) = &mut input.left_click_ability {
@@ -35,7 +37,7 @@ impl Input {
     input
   }
   
-  pub fn update(&mut self, ship: &mut Box<Entity>, mouse_pos: Vector2<f32>, left_mouse: bool, middle_mouse: bool, right_mouse: bool, window_size: Vector2<f32>, delta_time: f32) {
+  pub fn update(&mut self, ship: &mut Box<Entity>, mouse_pos: Vector2<f32>, left_mouse: bool, middle_mouse: bool, right_mouse: bool, q_pressed: bool, window_size: Vector2<f32>, delta_time: f32) {
     let mut target = mouse_pos;
     let ship_offset = ship.position()-window_size*0.5;
     target += ship_offset;
@@ -57,6 +59,13 @@ impl Input {
     if let Some(ability) = &mut self.right_click_ability {
       ability.update(delta_time);
       if right_mouse {
+        ability.activate(ship, target, window_size);
+      }
+    }
+    
+    if let Some(ability) = &mut self.ability_one {
+      ability.update(delta_time);
+      if q_pressed {
         ability.activate(ship, target, window_size);
       }
     }

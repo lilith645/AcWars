@@ -7,6 +7,7 @@ mod brew;
 use maat_graphics::DrawCall;
 
 use crate::modules::projectiles::Projectile;
+use crate::modules::buffs::Buff;
 
 use std::f32::consts::PI;
 
@@ -26,6 +27,7 @@ pub struct EntityData {
   shield: f32,
   initial_health: f32,
   projectiles: Vec<Box<Projectile>>,
+  buffs: Vec<Box<Buff>>,
   hostile: bool,
   should_exist: bool,
 }
@@ -45,6 +47,7 @@ impl EntityData {
       shield: 0.0,
       initial_health: 100.0,
       projectiles: Vec::new(),
+      buffs: Vec::new(),
       hostile: false,
       should_exist: true,
     }
@@ -64,6 +67,7 @@ impl EntityData {
       shield: 0.0,
       initial_health: 100.0,
       projectiles: Vec::new(),
+      buffs: Vec::new(),
       hostile: false,
       should_exist: true,
     }
@@ -123,7 +127,11 @@ pub trait Entity: EntityClone {
   
   fn collision_information(&self) -> Vec<(Vector2<f32>, f32)>;
   
-  fn update(&mut self, delta_time: f32) -> Vec<Box<Projectile>>;
+  fn update(&mut self, delta_time: f32) -> (Vec<Box<Buff>>, Vec<Box<Projectile>>) {
+    self.physics(delta_time);
+    
+    (self.return_buffs(), self.return_projectiles())
+  }
   
   fn position(&self) -> Vector2<f32> {
     self.data().position
@@ -131,6 +139,18 @@ pub trait Entity: EntityClone {
   
   fn size(&self) -> Vector2<f32> {
     self.data().size
+  }
+  
+  fn rotation(&self) -> f32 {
+    self.data().rotation
+  }
+  
+  fn velocity(&self) -> Vector2<f32> {
+    self.data().velocity
+  }
+  
+  fn max_velocity(&self) -> f32 {
+    self.data().max_velocity
   }
   
   fn should_exist(&self) -> bool {
@@ -176,6 +196,14 @@ pub trait Entity: EntityClone {
     }
   }
   
+  fn set_velocity(&mut self, vel: Vector2<f32>) {
+    self.mut_data().velocity = vel;
+  }
+  
+  fn set_max_velocty(&mut self, max_vel: f32) {
+    self.mut_data().max_velocity = max_vel;
+  }
+  
   fn set_rotation(&mut self, rot: f32) {
     self.mut_data().rotation = rot;
   }
@@ -188,7 +216,12 @@ pub trait Entity: EntityClone {
     self.mut_data().rotation = rot_degree;
   }
   
-  fn apply_velocity_in_direction(&mut self, direction: Vector2<f32>) {
+  fn set_velocity_magnitude(&mut self, vel: f32) {
+    let vel_dir = self.data().velocity.normalize();
+    self.mut_data().velocity = vel_dir*vel;
+  }
+  
+  fn apply_acceleration_in_direction(&mut self, direction: Vector2<f32>) {
     self.mut_data().acceleration = direction.normalize();
   }
   
@@ -198,6 +231,10 @@ pub trait Entity: EntityClone {
     }
     
     self.mut_data().projectiles.push(projectile);
+  }
+  
+  fn activate_buff(&mut self, buff: Box<Buff>) {
+    self.mut_data().buffs.push(buff);
   }
   
   fn physics(&mut self, delta_time: f32) {
@@ -221,6 +258,13 @@ pub trait Entity: EntityClone {
     self.mut_data().projectiles.clear();
     
     projectiles
+  }
+  
+  fn return_buffs(&mut self) -> Vec<Box<Buff>> {
+    let buffs = self.data().buffs.clone();
+    self.mut_data().buffs.clear();
+    
+    buffs
   }
   
   fn draw_ship_ui(&self, draw_calls: &mut Vec<DrawCall>) {

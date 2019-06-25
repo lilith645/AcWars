@@ -23,7 +23,7 @@ const MAJOR: u32 = 0;
 const MINOR: u32 = 0;
 const PATCH: u32 = 1;
 
-const DELTA_STEP: f32 = 0.01;
+const DELTA_STEP: f32 = 0.001;
 
 fn benchmark(draw_calls: &mut Vec<DrawCall>, dimensions: Vector2<f32>) {
   draw_calls.push(DrawCall::draw_text_basic(Vector2::new(dimensions.x - 80.0, 15.0), 

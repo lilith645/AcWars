@@ -33,6 +33,12 @@ impl EntityController for AbilitySpamAi {
       ability.activate(ship, target, window_size);
     }
     
+   /* let ship_offset = target-window_size*0.5;
+    target += ship_offset;*/
+    
+    let vel_dir = target - ship.position();
+    ship.apply_acceleration_in_direction(vel_dir);
+    
     ship.set_facing(target);
   }
 }

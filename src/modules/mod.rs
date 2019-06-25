@@ -6,4 +6,5 @@ pub mod controllers;
 pub mod projectiles;
 pub mod abilities;
 pub mod entities;
+pub mod buffs;
 mod animation;

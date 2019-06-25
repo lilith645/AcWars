@@ -18,6 +18,7 @@ impl Ship {
       data: EntityData::new(position, size, texture.to_string())
                         .with_max_velocity(500.0)
                         .with_inertia(0.33)
+                        .with_health(500.0)
     }
   }
   
@@ -40,11 +41,5 @@ impl Entity for Ship {
     let radius = self.data().size.x.min(self.data().size.y)*0.5 * 0.7;
     
     vec!((Vector2::new(0.0, 0.0), radius))
-  }
-  
-  fn update(&mut self, delta_time: f32) -> Vec<Box<Projectile>> {
-    self.physics(delta_time);
-    
-    self.return_projectiles()
   }
 }

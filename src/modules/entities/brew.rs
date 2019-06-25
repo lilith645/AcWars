@@ -13,13 +13,14 @@ pub struct Brew {
 impl Brew {
   pub fn new() -> Brew {
      let position = Vector2::new(640.0, 1500.0);
-     let size = Vector2::new(90.0, 90.0);
+     let size = Vector2::new(70.0, 70.0);
      let texture = "Brew".to_string();
      
      Brew {
       data: EntityData::new(position, size, texture.to_string())
                         .with_max_velocity(500.0)
                         .with_inertia(0.33)
+                        .with_health(50.0)
     }
   }
   
@@ -47,11 +48,5 @@ impl Entity for Brew {
     let radius = self.data().size.x.min(self.data().size.y)*0.5 * 0.8;
     
     vec!((Vector2::new(0.0, 0.0), radius))
-  }
-  
-  fn update(&mut self, delta_time: f32) -> Vec<Box<Projectile>> {
-    self.physics(delta_time);
-    
-    self.return_projectiles()
   }
 }

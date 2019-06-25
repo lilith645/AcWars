@@ -1,23 +1,24 @@
 use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::Projectile;
+use crate::modules::buffs::MaxSpeedBuff;
 
 use cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
-pub struct Move {
+pub struct Haste {
   data: AbilityData,
 }
 
-impl Move {
-  pub fn new() -> Move {
-    Move {
-      data: AbilityData::new_active(0.001),
+impl Haste {
+  pub fn new() -> Haste {
+    Haste {
+      data: AbilityData::new_active(5.0),
     }
   }
 }
 
-impl Ability for Move {
+impl Ability for Haste {
   fn data(&self) -> &AbilityData {
     &self.data
   }
@@ -31,10 +32,6 @@ impl Ability for Move {
   }
   
   fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>) {
-    let ship_pos = ship.position();
-    
-    let direction = (target-ship_pos).normalize();
-    
-    ship.apply_acceleration_in_direction(direction);
+    ship.activate_buff(Box::new(MaxSpeedBuff::new()));
   }
 }

@@ -12,7 +12,7 @@ pub struct SingleShot {
 impl SingleShot {
   pub fn new() -> SingleShot {
     SingleShot {
-      data: AbilityData::new_active(0.25),
+      data: AbilityData::new_active(0.5),
     }
   }
 }
