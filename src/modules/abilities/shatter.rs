@@ -66,20 +66,5 @@ impl Ability for Shatter {
     for projectile in projectiles {
       ship.fire_projectile(projectile)
     }
-    /*
-    
-    
-    
-    let mut projectile0: Box<Projectile> = Box::new(Ftpl::new(ship_pos+left_normal*25.0, ship_size*0.5, proj_dir));
-    let mut projectile1: Box<Projectile> = Box::new(Ftpl::new(ship_pos+right_normal*25.0, ship_size*0.5, proj_dir));
-    
-    self.apply_passive_abilities(&mut projectile0);
-    self.apply_passive_abilities(&mut projectile1);
-    
-    projectile0.lock_hostility();
-    projectile1.lock_hostility();
-    
-    ship.fire_projectile(projectile0);
-    ship.fire_projectile(projectile1);*/
   }
 }
