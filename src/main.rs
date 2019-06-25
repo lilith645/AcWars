@@ -23,6 +23,8 @@ const MAJOR: u32 = 0;
 const MINOR: u32 = 0;
 const PATCH: u32 = 1;
 
+const DELTA_STEP: f32 = 0.01;
+
 fn benchmark(draw_calls: &mut Vec<DrawCall>, dimensions: Vector2<f32>) {
   draw_calls.push(DrawCall::draw_text_basic(Vector2::new(dimensions.x - 80.0, 15.0), 
                                            Vector2::new(64.0, 64.0), 
@@ -50,8 +52,6 @@ fn main() {
                         include_bytes!("../resources/fonts/TimesNewRoman.fnt"));
   graphics.preload_texture(String::from("Logo"), 
                            String::from("./resources/textures/Logo.png"));
-  
- // graphics.create_instance_buffer("Ftpl".to_string());
   
   // Ships
   graphics.preload_texture("Bulbz".to_string(), "./resources/textures/ships/Bulbz.png".to_string());
@@ -87,9 +87,12 @@ fn main() {
   let mut fps_timer = 0.0;
   let mut last_fps = 0.0;
   
+  let mut total_delta_time = 0.0;
+  
   loop {
     delta_time = last_time.elapsed().subsec_nanos() as f64 / 1000000000.0 as f64;
     last_time = time::Instant::now();
+    total_delta_time += delta_time as f32;
     
     frame_counter += 1;
     fps_timer += delta_time;
@@ -118,9 +121,14 @@ fn main() {
     
     game.set_window_dimensions(dimensions);
     
-    game.draw(&mut draw_calls);
-    game.update(None, None, delta_time as f32);
+    let delta_steps = (total_delta_time / DELTA_STEP).floor() as usize;
     
+    for _ in 0..delta_steps {
+      game.update(None, None, DELTA_STEP);
+      total_delta_time -= DELTA_STEP;
+    }
+    
+    game.draw(&mut draw_calls);
     benchmark(&mut draw_calls, dimensions);
     fps_overlay(&mut draw_calls, dimensions, last_fps);
     
