@@ -2,7 +2,7 @@ use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::{Projectile, Gob};
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct SingleShot {
@@ -12,7 +12,7 @@ pub struct SingleShot {
 impl SingleShot {
   pub fn new() -> SingleShot {
     SingleShot {
-      data: AbilityData::new_active(0.5),
+      data: AbilityData::new_active("SingleShotIcon".to_string(), 0.75),
     }
   }
 }

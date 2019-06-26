@@ -10,7 +10,3 @@ maat_input_handler = { path = "./Maat-InputHandler/" }
 #maat_sound = { path = "./Maat-Sound/" }
 rand = "0.6"
 hlua = "*"
-
-[dependencies.cgmath]
-version = "0.17.0"
-features = ["swizzle"]

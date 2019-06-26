@@ -2,7 +2,7 @@ use crate::modules::projectiles::{Projectile, ProjectileData};
 
 use std::f32::consts::PI;
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 // Ftpl - Fancy torpedo phaser laser
 
@@ -18,7 +18,7 @@ impl Ftpl {
                                 center_pos.y+offset.y*direction.y);
     
     let size = Vector2::new(50.0, 50.0);
-    let velocity = direction.normalize()*800.0;
+    let velocity = direction.normalize()*1200.0;
     let texture = "Ftpl".to_string();
     let sprite_rows = 3;
     let animation_timer = 0.06;

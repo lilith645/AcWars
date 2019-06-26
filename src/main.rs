@@ -1,10 +1,10 @@
 extern crate maat_graphics;
 extern crate maat_input_handler;
-extern crate cgmath;
 extern crate rand;
 extern crate hlua;
 
 pub use maat_graphics::winit;
+pub use maat_graphics::cgmath;
 
 mod modules;
 
@@ -54,14 +54,24 @@ fn main() {
                            String::from("./resources/textures/Logo.png"));
   
   // Ships
-  graphics.preload_texture("Bulbz".to_string(), "./resources/textures/ships/Bulbz.png".to_string());
-  graphics.preload_texture("Brew".to_string(), "./resources/textures/ships/Brew.png".to_string());
+  graphics.add_texture("Bulbz".to_string(), "./resources/textures/ships/Bulbz.png".to_string());
+  graphics.add_texture("Brew".to_string(), "./resources/textures/ships/Brew.png".to_string());
   // Projectiles
-  graphics.preload_texture("Ftpl".to_string(), "./resources/textures/projectiles/Ftpl.png".to_string());
-  graphics.preload_texture("Gob".to_string(), "./resources/textures/projectiles/Gob.png".to_string());
-  graphics.preload_texture("LaserBeam".to_string(), "./resources/textures/projectiles/laserbeam.png".to_string());
-  
-  graphics.preload_texture("bg_space".to_string(), "./resources/textures/backgrounds/space_tileable.png".to_string());
+  graphics.add_texture("Ftpl".to_string(), "./resources/textures/projectiles/Ftpl.png".to_string());
+  graphics.add_texture("Gob".to_string(), "./resources/textures/projectiles/Gob.png".to_string());
+  graphics.add_texture("LaserBeam".to_string(), "./resources/textures/projectiles/laserbeam.png".to_string());
+  // Abilities
+  graphics.add_texture("DashIcon".to_string(), "./resources/textures/abilities/Dash.png".to_string());
+  graphics.add_texture("DoubleShotIcon".to_string(), "./resources/textures/abilities/DoubleShot.png".to_string());
+  graphics.add_texture("HasteIcon".to_string(), "./resources/textures/abilities/Haste.png".to_string());
+  graphics.add_texture("LaserBeamIcon".to_string(), "./resources/textures/abilities/LaserBeam.png".to_string());
+  graphics.add_texture("MoveIcon".to_string(), "./resources/textures/abilities/Move.png".to_string());
+  graphics.add_texture("NoAbilityIcon".to_string(), "./resources/textures/abilities/NoAbility.png".to_string());
+  graphics.add_texture("ShatterIcon".to_string(), "./resources/textures/abilities/Shatter.png".to_string());
+  graphics.add_texture("ShieldIcon".to_string(), "./resources/textures/abilities/Shield.png".to_string());
+  graphics.add_texture("SingleShotIcon".to_string(), "./resources/textures/abilities/SingleShot.png".to_string());
+  // Backgrounds
+  graphics.add_texture("bg_space".to_string(), "./resources/textures/backgrounds/space_tileable.png".to_string());
   
   graphics.create_instance_buffer("Ftpl".to_string());
   graphics.create_instance_buffer("Gob".to_string());

@@ -4,7 +4,7 @@ use crate::modules::buffs::{Buff, BuffData};
 
 use crate::modules::entities::Entity;
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct SpeedBuff {

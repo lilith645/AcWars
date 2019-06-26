@@ -5,7 +5,7 @@ mod ability_spam_ai;
 use crate::modules::abilities::{Ability};
 use crate::modules::entities::Entity;
 
-use cgmath::Vector2;
+use crate::cgmath::Vector2;
 
 #[derive(Clone)]
 pub struct EntityControllerData {

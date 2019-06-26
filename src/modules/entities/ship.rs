@@ -1,7 +1,7 @@
 use crate::modules::entities::{Entity, EntityData};
 use crate::modules::projectiles::Projectile;
 
-use cgmath::Vector2;
+use crate::cgmath::Vector2;
 
 #[derive(Clone)]
 pub struct Ship {
@@ -16,7 +16,7 @@ impl Ship {
      
      Ship {
       data: EntityData::new(position, size, texture.to_string())
-                        .with_max_velocity(500.0)
+                        .with_max_velocity(800.0)
                         .with_inertia(0.33)
                         .with_health(500.0)
     }

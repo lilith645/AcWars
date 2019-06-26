@@ -2,7 +2,7 @@ use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::{Projectile};
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct ProjectileSpeed {
@@ -12,7 +12,7 @@ pub struct ProjectileSpeed {
 impl ProjectileSpeed {
   pub fn new() -> ProjectileSpeed {
     ProjectileSpeed {
-      data: AbilityData::new_passive(0.0),
+      data: AbilityData::new_passive("".to_string(), 0.0),
     }
   }
 }

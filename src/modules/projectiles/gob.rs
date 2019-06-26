@@ -2,7 +2,7 @@ use crate::modules::projectiles::{Projectile, ProjectileData};
 
 use std::f32::consts::PI;
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 // Gob - Green orbital blaster
 
@@ -33,7 +33,7 @@ impl Gob {
                             .with_rotation(rot_degree)
                             .with_total_frames(6)
                             .animate_forwards_then_backwards()
-                            .with_damage(3.5),
+                            .with_damage(3.0),
     }
   }
 }

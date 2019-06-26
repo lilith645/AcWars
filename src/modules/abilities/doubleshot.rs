@@ -2,7 +2,7 @@ use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::{Projectile, Ftpl};
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct DoubleShot {
@@ -12,7 +12,7 @@ pub struct DoubleShot {
 impl DoubleShot {
   pub fn new() -> DoubleShot {
     DoubleShot {
-      data: AbilityData::new_active(0.35),
+      data: AbilityData::new_active("DoubleShotIcon".to_string(), 0.15),
     }
   }
 }

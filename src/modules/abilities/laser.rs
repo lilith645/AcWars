@@ -2,7 +2,7 @@ use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::{Projectile, LaserBeam};
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct Laser {
@@ -12,7 +12,7 @@ pub struct Laser {
 impl Laser {
   pub fn new() -> Laser {
     Laser {
-      data: AbilityData::new_active(1.25),
+      data: AbilityData::new_active("LaserBeamIcon".to_string(), 1.25),
     }
   }
 }

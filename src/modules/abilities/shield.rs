@@ -2,7 +2,7 @@ use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::Projectile;
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct Shield {
@@ -12,7 +12,7 @@ pub struct Shield {
 impl Shield {
   pub fn new() -> Shield {
     Shield {
-      data: AbilityData::new_active(5.0),
+      data: AbilityData::new_active("ShieldIcon".to_string(), 5.0),
     }
   }
 }

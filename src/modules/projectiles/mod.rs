@@ -13,7 +13,7 @@ use crate::modules::Animation;
 use crate::modules::entities::Entity;
 use crate::modules::abilities::Ability;
 
-use cgmath::{Vector2, Vector3, Vector4};
+use crate::cgmath::{Vector2, Vector3, Vector4};
 
 #[derive(Clone)]
 pub struct ProjectileData {

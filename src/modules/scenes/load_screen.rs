@@ -6,7 +6,7 @@ use hlua::Lua;
 use crate::modules::scenes::Scene;
 use crate::modules::scenes::SceneData;
 use crate::modules::scenes::BattleScreen;
-use cgmath::{Vector2, Vector4};
+use crate::cgmath::{Vector2, Vector4};
 
 const LOGO_TIMER: f32 = 1.5;
 
@@ -62,7 +62,21 @@ impl Scene for LoadScreen {
     let (width, height) = (dim.x as f32, dim.y as f32);
     
     if self.first_loop {
-      draw_calls.push(DrawCall::load_model("Axis".to_string()));
+      draw_calls.push(DrawCall::load_texture("bg_space".to_string()));
+      draw_calls.push(DrawCall::load_texture("Bulbz".to_string()));
+      draw_calls.push(DrawCall::load_texture("Brew".to_string()));
+      draw_calls.push(DrawCall::load_texture("Ftpl".to_string()));
+      draw_calls.push(DrawCall::load_texture("Gob".to_string()));
+      draw_calls.push(DrawCall::load_texture("LaserBeam".to_string()));
+      draw_calls.push(DrawCall::load_texture("DashIcon".to_string()));
+      draw_calls.push(DrawCall::load_texture("DoubleShotIcon".to_string()));
+      draw_calls.push(DrawCall::load_texture("HasteIcon".to_string()));
+      draw_calls.push(DrawCall::load_texture("LaserBeamIcon".to_string()));
+      draw_calls.push(DrawCall::load_texture("MoveIcon".to_string()));
+      draw_calls.push(DrawCall::load_texture("NoAbilityIcon".to_string()));
+      draw_calls.push(DrawCall::load_texture("ShatterIcon".to_string()));
+      draw_calls.push(DrawCall::load_texture("ShieldIcon".to_string()));
+      draw_calls.push(DrawCall::load_texture("SingleShotIcon".to_string()));
     }
     
     draw_calls.push(DrawCall::set_texture_scale(1.0));

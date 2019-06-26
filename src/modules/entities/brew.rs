@@ -1,7 +1,7 @@
 use crate::modules::entities::{Entity, EntityData};
 use crate::modules::projectiles::Projectile;
 
-use cgmath::Vector2;
+use crate::cgmath::Vector2;
 
 // Brew - Battle ready energy warBrew
 

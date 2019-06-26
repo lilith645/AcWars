@@ -1,6 +1,6 @@
 use maat_graphics::DrawCall;
 
-use cgmath::{Vector2, Vector3};
+use crate::cgmath::{Vector2, Vector3};
 
 #[derive(Clone)]
 pub enum AnimationDirection {

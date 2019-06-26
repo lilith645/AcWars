@@ -1,8 +1,10 @@
+use maat_graphics::math;
+
 use crate::modules::entities::Entity;
 use crate::modules::controllers::{EntityController, EntityControllerData};
 use crate::modules::abilities::SingleShot;
 
-use cgmath::Vector2;
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct AbilitySpamAi {
@@ -33,10 +35,10 @@ impl EntityController for AbilitySpamAi {
       ability.activate(ship, target, window_size);
     }
     
-   /* let ship_offset = target-window_size*0.5;
-    target += ship_offset;*/
-    
-    let vel_dir = target - ship.position();
+    let mut vel_dir = target - ship.position();
+    if vel_dir.magnitude() < 400.0 {
+      vel_dir = math::rotate_vector2(vel_dir, 90.0);
+    }
     ship.apply_acceleration_in_direction(vel_dir);
     
     ship.set_facing(target);

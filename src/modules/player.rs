@@ -1,8 +1,10 @@
+use maat_graphics::DrawCall;
+
 use crate::modules::entities::Entity;
 use crate::modules::abilities::{Ability, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed, 
                                 Shatter, Shield, Dash};
 
-use cgmath::Vector2;
+use crate::cgmath::Vector2;
 
 pub enum AbilityPosition {
   LeftClick,
@@ -30,8 +32,8 @@ impl Input {
       ability_one: Some(Box::new(Dash::new())),
     };
     
-    if let Some(left_click_ability) = &mut input.left_click_ability {
-      left_click_ability.add_passive(Box::new(Shatter::new()));
+    if let Some(right_click_ability) = &mut input.right_click_ability {
+      right_click_ability.add_passive(Box::new(Shatter::new()));
     }
     
     input
@@ -71,5 +73,11 @@ impl Input {
     }
     
     ship.set_facing(target);
+  }
+  
+  pub fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
+    if let Some(ability) = &self.left_click_ability {
+      ability.draw(Vector2::new(100.0, 100.0), draw_calls);
+    }
   }
 }

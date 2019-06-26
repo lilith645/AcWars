@@ -2,7 +2,7 @@ use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::Projectile;
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct Move {
@@ -12,7 +12,7 @@ pub struct Move {
 impl Move {
   pub fn new() -> Move {
     Move {
-      data: AbilityData::new_active(0.001),
+      data: AbilityData::new_active("MoveIcon".to_string(), 0.001),
     }
   }
 }

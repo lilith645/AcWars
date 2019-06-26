@@ -1,4 +1,5 @@
 use maat_graphics::DrawCall;
+use maat_graphics::camera::OrthoCamera;
 use maat_graphics::imgui::*;
 
 use crate::modules::scenes::Scene;
@@ -10,9 +11,9 @@ use crate::modules::projectiles::{Projectile};
 use crate::modules::controllers::{EntityController, AbilitySpamAi};
 use crate::modules::player;
 
-use hlua::Lua;
+use crate::cgmath::{Vector2};
 
-use cgmath::{Vector2};
+use hlua::Lua;
 
 #[derive(Clone)]
 pub struct FullEntity {
@@ -28,6 +29,8 @@ pub struct BattleScreen {
   buffs: Vec<Box<Buff>>,
   hostiles: Vec<FullEntity>,
   projectiles: Vec<Box<Projectile>>,
+  zoom: f32,
+  camera: OrthoCamera,
 }
 
 impl BattleScreen {
@@ -55,10 +58,13 @@ impl BattleScreen {
         },
       ),
       projectiles: Vec::new(),
+      zoom: 0.75,
+      camera: OrthoCamera::new(window_size.x, window_size.y),
     }
   }
   
-  pub fn recreate(window_size: Vector2<f32>, ship: Box<Entity>, buffs: Vec<Box<Buff>>, hostiles: Vec<FullEntity>, projectiles: Vec<Box<Projectile>>) -> BattleScreen {
+  pub fn recreate(window_size: Vector2<f32>, mut camera: OrthoCamera, ship: Box<Entity>, buffs: Vec<Box<Buff>>, hostiles: Vec<FullEntity>, projectiles: Vec<Box<Projectile>>, zoom: f32) -> BattleScreen {
+    camera.window_resized(window_size.x, window_size.y);
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()), 
       input: player::Input::new(),
@@ -66,6 +72,8 @@ impl BattleScreen {
       buffs,
       hostiles,
       projectiles,
+      zoom,
+      camera,
     }
   }
 }
@@ -80,7 +88,7 @@ impl Scene for BattleScreen {
   }
   
   fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
-    Box::new(BattleScreen::recreate(window_size, self.ship.clone(), self.buffs.clone(), self.hostiles.clone(), self.projectiles.clone()))
+    Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.ship.clone(), self.buffs.clone(), self.hostiles.clone(), self.projectiles.clone(), self.zoom))
   }
   
   fn update(&mut self, _ui: Option<&Ui>, _lua: Option<&mut Lua>, delta_time: f32) {
@@ -193,14 +201,18 @@ impl Scene for BattleScreen {
         }
       }
     }
+    
+    let camera_target = self.ship.position()*self.zoom - Vector2::new(dim.x*0.5, dim.y*0.5);
+    self.camera.lerp_to_position(camera_target,  Vector2::new(0.05, 0.05));
   }
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
     let dim = self.data().window_dim;
     let (width, height) = (dim.x as f32, dim.y as f32);
     
-    let camera_target = self.ship.position() - Vector2::new(width*0.5, height*0.5);
-    draw_calls.push(DrawCall::lerp_ortho_camera_to_pos(camera_target, Vector2::new(0.05, 0.05)));
+    draw_calls.push(DrawCall::set_texture_scale(self.zoom));
+    
+    draw_calls.push(DrawCall::replace_ortho_camera(self.camera.clone()));
     
     for i in 0..10 {
       for j in 0..10 {
@@ -234,6 +246,10 @@ impl Scene for BattleScreen {
     }
     
     self.ship.draw_ship_ui(draw_calls);
+    
+    draw_calls.push(DrawCall::set_texture_scale(self.zoom));
+    draw_calls.push(DrawCall::reset_ortho_camera());
+    self.input.draw(draw_calls);
     
     /*
     for projectile in &self.projectiles {

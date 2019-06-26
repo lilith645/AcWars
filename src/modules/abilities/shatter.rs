@@ -4,7 +4,7 @@ use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::{Projectile, Ftpl};
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct Shatter {
@@ -14,7 +14,7 @@ pub struct Shatter {
 impl Shatter {
   pub fn new() -> Shatter {
     Shatter {
-      data: AbilityData::new_passive(0.0),
+      data: AbilityData::new_passive("ShatterIcon".to_string(), 0.0),
     }
   }
 }

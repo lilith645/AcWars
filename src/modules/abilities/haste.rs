@@ -3,7 +3,7 @@ use crate::modules::entities::Entity;
 use crate::modules::projectiles::Projectile;
 use crate::modules::buffs::MaxSpeedBuff;
 
-use cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
 pub struct Haste {
@@ -13,7 +13,7 @@ pub struct Haste {
 impl Haste {
   pub fn new() -> Haste {
     Haste {
-      data: AbilityData::new_active(5.0),
+      data: AbilityData::new_active("HasteIcon".to_string(), 5.0),
     }
   }
 }

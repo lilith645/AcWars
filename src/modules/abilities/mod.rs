@@ -24,10 +24,12 @@ mod shatter;
 // other
 mod movement;
 
+use maat_graphics::DrawCall;
+
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::Projectile;
 
-use cgmath::Vector2;
+use crate::cgmath::Vector2;
 
 #[derive(Clone, PartialEq)]
 pub enum AbilityType {
@@ -38,24 +40,27 @@ pub enum AbilityType {
 #[derive(Clone)]
 pub struct AbilityData {
   ability_type: AbilityType,
+  texture: String,
   timer: f32,
   time_left: f32,
   passives: Vec<Box<Ability>>,
 }
 
 impl AbilityData {
-  pub fn new_active(timer: f32) -> AbilityData {
+  pub fn new_active(texture: String, timer: f32) -> AbilityData {
     AbilityData {
       ability_type: AbilityType::Active,
+      texture,
       timer,
       time_left: 0.0,
       passives: Vec::new(),
     }
   }
   
-  pub fn new_passive(timer: f32) -> AbilityData {
+  pub fn new_passive(texture: String, timer: f32) -> AbilityData {
     AbilityData {
       ability_type: AbilityType::Passive,
+      texture,
       timer,
       time_left: 0.0,
       passives: Vec::new(),
@@ -119,4 +124,8 @@ pub trait Ability: AbilityClone {
   
   fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>);
   fn apply_passive_effect(&self, projectile: &mut Box<Projectile>);
+  
+  fn draw(&self, position: Vector2<f32>, draw_calls: &mut Vec<DrawCall>) {
+    draw_calls.push(DrawCall::draw_textured(position, Vector2::new(100.0, 100.0), 0.0, self.data().texture.to_string()));
+  }
 }

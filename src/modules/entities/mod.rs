@@ -11,7 +11,7 @@ use crate::modules::buffs::Buff;
 
 use std::f32::consts::PI;
 
-use cgmath::{Vector2, Vector3, Vector4, InnerSpace};
+use crate::cgmath::{Vector2, Vector3, Vector4, InnerSpace};
 
 #[derive(Clone)]
 pub struct EntityData {
