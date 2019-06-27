@@ -1,6 +1,8 @@
 use maat_graphics::DrawCall;
 use maat_graphics::camera::OrthoCamera;
-use maat_graphics::imgui::*;
+use maat_graphics::imgui;
+
+use maat_gui;
 
 use crate::modules::scenes::Scene;
 use crate::modules::scenes::SceneData;
@@ -10,11 +12,23 @@ use crate::modules::entities::{Entity, Ship, Brew};
 use crate::modules::projectiles::{Projectile};
 use crate::modules::controllers::{EntityController, AbilitySpamAi};
 use crate::modules::player;
-use crate::modules::ui::AbilityUi;
+use crate::modules::ui::{Ui, PauseUi, AbilityUi};
 
 use crate::cgmath::{Vector2};
 
 use hlua::Lua;
+
+enum UiIndex {
+  PauseUi,
+  AbilityUi,
+}
+
+impl UiIndex {
+  pub fn n(self) -> usize {
+    self as usize
+  }
+}
+
 
 #[derive(Clone)]
 pub struct FullEntity {
@@ -33,6 +47,7 @@ pub struct BattleScreen {
   zoom: f32,
   camera: OrthoCamera,
   ability_ui: AbilityUi,
+  uis: Vec<Box<Ui>>,
 }
 
 impl BattleScreen {
@@ -63,6 +78,7 @@ impl BattleScreen {
       zoom: 0.75,
       camera: OrthoCamera::new(window_size.x, window_size.y),
       ability_ui: AbilityUi::new(),
+      uis: vec!(Box::new(PauseUi::new(window_size))),
     }
   }
   
@@ -78,6 +94,7 @@ impl BattleScreen {
       zoom,
       camera,
       ability_ui: AbilityUi::new(),
+      uis: vec!(Box::new(PauseUi::new(window_size))),
     }
   }
 }
@@ -95,7 +112,7 @@ impl Scene for BattleScreen {
     Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.ship.clone(), self.buffs.clone(), self.hostiles.clone(), self.projectiles.clone(), self.zoom))
   }
   
-  fn update(&mut self, _ui: Option<&Ui>, _lua: Option<&mut Lua>, delta_time: f32) {
+  fn update(&mut self, _ui: Option<&imgui::Ui>, _lua: Option<&mut Lua>, delta_time: f32) {
     let dim = self.data().window_dim;
     let mouse_pos = self.data.mouse_pos;
     
@@ -103,6 +120,14 @@ impl Scene for BattleScreen {
     let middle_mouse = self.data.middle_mouse;
     let right_mouse = self.data.right_mouse;
     let q_pressed = self.data.keys.q_pressed();
+    
+    let mut should_close = false;
+    for ui in &mut self.uis {
+      ui.update(mouse_pos, left_mouse, dim, &mut should_close, delta_time);
+    }
+    if should_close {
+      self.mut_data().should_close = true;
+    }
     
     // Player
     
@@ -268,5 +293,11 @@ impl Scene for BattleScreen {
     
     let (abl, abm, abr, ab1, ab2, ab3, ab4) = self.input.return_abilities();
     self.ability_ui.draw(abl, abm, abr, ab1, ab2, ab3, ab4, draw_calls);
+    
+    for ui in &self.uis {
+      ui.draw(draw_calls);
+    }
+    
+    //maat_gui::test_drawing("NoAbilityIcon".to_string(), "Arial".to_string(), draw_calls);
   }
 }

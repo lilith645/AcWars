@@ -1,5 +1,6 @@
 extern crate maat_graphics;
 extern crate maat_input_handler;
+extern crate maat_gui;
 extern crate rand;
 extern crate hlua;
 
