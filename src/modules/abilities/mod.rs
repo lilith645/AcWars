@@ -6,6 +6,7 @@ pub use shatter::Shatter;
 pub use shield::Shield;
 pub use dash::Dash;
 pub use haste::Haste;
+pub use no_ability::NoAbility;
 
 pub use projectile_speed::ProjectileSpeed;
 
@@ -23,13 +24,14 @@ mod shatter;
 
 // other
 mod movement;
+mod no_ability;
 
 use maat_graphics::DrawCall;
 
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::Projectile;
 
-use crate::cgmath::Vector2;
+use crate::cgmath::{Vector2, Vector4};
 
 #[derive(Clone, PartialEq)]
 pub enum AbilityType {
@@ -126,6 +128,13 @@ pub trait Ability: AbilityClone {
   fn apply_passive_effect(&self, projectile: &mut Box<Projectile>);
   
   fn draw(&self, position: Vector2<f32>, draw_calls: &mut Vec<DrawCall>) {
-    draw_calls.push(DrawCall::draw_textured(position, Vector2::new(100.0, 100.0), 0.0, self.data().texture.to_string()));
+    draw_calls.push(DrawCall::draw_textured(position, Vector2::new(50.0, 50.0), 0.0, self.data().texture.to_string()));
+    
+    let time_left_percentage = self.data().time_left / self.data().timer;
+    if time_left_percentage > 0.0 {
+      draw_calls.push(DrawCall::draw_coloured(Vector2::new(position.x, position.y), 
+                                              Vector2::new(50.0, 50.0*time_left_percentage),
+                                              Vector4::new(1.0, 1.0, 1.0, 0.3), 0.0));
+    }
   }
 }

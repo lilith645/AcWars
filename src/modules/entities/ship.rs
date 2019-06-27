@@ -1,3 +1,4 @@
+use crate::modules::entities::sections::{Hull, Wing, Thruster, WeaponMount};
 use crate::modules::entities::{Entity, EntityData};
 use crate::modules::projectiles::Projectile;
 
@@ -19,6 +20,12 @@ impl Ship {
                         .with_max_velocity(800.0)
                         .with_inertia(0.33)
                         .with_health(500.0)
+                        .with_ship_section(Box::new(Hull::new()))
+                        .with_ship_section(Box::new(Wing::new()))
+                        .with_ship_section(Box::new(Wing::new()))
+                        .with_ship_section(Box::new(Thruster::new()))
+                        .with_ship_section(Box::new(Thruster::new()))
+                        .with_ship_section(Box::new(WeaponMount::new())),
     }
   }
   

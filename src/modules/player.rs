@@ -75,9 +75,12 @@ impl Input {
     ship.set_facing(target);
   }
   
-  pub fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
-    if let Some(ability) = &self.left_click_ability {
-      ability.draw(Vector2::new(100.0, 100.0), draw_calls);
-    }
+  pub fn return_abilities(&self) -> (Option<Box<Ability>>, Option<Box<Ability>>, Option<Box<Ability>>, 
+                                     Option<Box<Ability>>, Option<Box<Ability>>, Option<Box<Ability>>, 
+                                     Option<Box<Ability>>) {
+    (self.left_click_ability.clone(), self.middle_click_ability.clone(), self.right_click_ability.clone(), 
+     self.ability_one.clone(), None, None, None)
   }
 }
+
+

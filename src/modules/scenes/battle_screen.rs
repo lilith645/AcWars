@@ -10,6 +10,7 @@ use crate::modules::entities::{Entity, Ship, Brew};
 use crate::modules::projectiles::{Projectile};
 use crate::modules::controllers::{EntityController, AbilitySpamAi};
 use crate::modules::player;
+use crate::modules::ui::AbilityUi;
 
 use crate::cgmath::{Vector2};
 
@@ -31,6 +32,7 @@ pub struct BattleScreen {
   projectiles: Vec<Box<Projectile>>,
   zoom: f32,
   camera: OrthoCamera,
+  ability_ui: AbilityUi,
 }
 
 impl BattleScreen {
@@ -60,11 +62,12 @@ impl BattleScreen {
       projectiles: Vec::new(),
       zoom: 0.75,
       camera: OrthoCamera::new(window_size.x, window_size.y),
+      ability_ui: AbilityUi::new(),
     }
   }
   
-  pub fn recreate(window_size: Vector2<f32>, mut camera: OrthoCamera, ship: Box<Entity>, buffs: Vec<Box<Buff>>, hostiles: Vec<FullEntity>, projectiles: Vec<Box<Projectile>>, zoom: f32) -> BattleScreen {
-    camera.window_resized(window_size.x, window_size.y);
+  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, ship: Box<Entity>, buffs: Vec<Box<Buff>>, hostiles: Vec<FullEntity>, projectiles: Vec<Box<Projectile>>, zoom: f32) -> BattleScreen {
+    
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()), 
       input: player::Input::new(),
@@ -74,6 +77,7 @@ impl BattleScreen {
       projectiles,
       zoom,
       camera,
+      ability_ui: AbilityUi::new(),
     }
   }
 }
@@ -202,6 +206,9 @@ impl Scene for BattleScreen {
       }
     }
     
+    self.ability_ui.update(dim);
+    
+    self.camera.window_resized(dim.x, dim.y);
     let camera_target = self.ship.position()*self.zoom - Vector2::new(dim.x*0.5, dim.y*0.5);
     self.camera.lerp_to_position(camera_target,  Vector2::new(0.05, 0.05));
   }
@@ -219,7 +226,7 @@ impl Scene for BattleScreen {
         draw_calls.push(
           DrawCall::draw_textured(Vector2::new(width*0.5+width*(i as f32-4.0), height*0.5+height*(j as f32-4.0)),
                                   Vector2::new(width*1.0, height*1.0),
-                                  270.0,
+                                  0.0,
                                   "bg_space".to_string())
         );
       }
@@ -247,17 +254,19 @@ impl Scene for BattleScreen {
     
     self.ship.draw_ship_ui(draw_calls);
     
-    draw_calls.push(DrawCall::set_texture_scale(self.zoom));
-    draw_calls.push(DrawCall::reset_ortho_camera());
-    self.input.draw(draw_calls);
-    
     /*
     for projectile in &self.projectiles {
       projectile.draw_collision_circles(draw_calls);
     }
-    for (controller, hostile) in &self.hostiles {
-      hostile.draw_collision_circles(draw_calls);
+    for hostile in &self.hostiles {
+      hostile.entity.draw_collision_circles(draw_calls);
     }
     self.ship.draw_collision_circles(draw_calls);*/
+    
+    draw_calls.push(DrawCall::set_texture_scale(1.0));
+    draw_calls.push(DrawCall::reset_ortho_camera());
+    
+    let (abl, abm, abr, ab1, ab2, ab3, ab4) = self.input.return_abilities();
+    self.ability_ui.draw(abl, abm, abr, ab1, ab2, ab3, ab4, draw_calls);
   }
 }

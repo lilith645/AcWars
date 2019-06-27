@@ -4,3 +4,6 @@
 [submodule "Maat-InputHandler"]
 	path = Maat-InputHandler
 	url = https://github.com/lilith645/Maat-InputHandler.git
+[submodule "Maat-Gui"]
+	path = Maat-Gui
+	url = https://github.com/lilith645/Maat-Gui.git

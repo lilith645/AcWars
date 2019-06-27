@@ -1,11 +1,14 @@
 pub use self::ship::Ship;
 pub use self::brew::Brew;
 
+pub mod sections;
+
 mod ship;
 mod brew;
 
 use maat_graphics::DrawCall;
 
+use crate::modules::entities::sections::{ShipSection, RepairBay, HullMaterial};
 use crate::modules::projectiles::Projectile;
 use crate::modules::buffs::Buff;
 
@@ -30,6 +33,9 @@ pub struct EntityData {
   buffs: Vec<Box<Buff>>,
   hostile: bool,
   should_exist: bool,
+  ship_sections: Vec<Box<ShipSection>>,
+  hull_material: Box<ShipSection>,
+  repair_bay: Box<ShipSection>,
 }
 
 impl EntityData {
@@ -50,6 +56,9 @@ impl EntityData {
       buffs: Vec::new(),
       hostile: false,
       should_exist: true,
+      ship_sections: Vec::new(),
+      hull_material: Box::new(HullMaterial::new()),
+      repair_bay: Box::new(RepairBay::new()),
     }
   }
   
@@ -70,6 +79,9 @@ impl EntityData {
       buffs: Vec::new(),
       hostile: false,
       should_exist: true,
+      ship_sections: Vec::new(),
+      hull_material: Box::new(HullMaterial::new()),
+      repair_bay: Box::new(RepairBay::new()),
     }
   }
   
@@ -101,6 +113,11 @@ impl EntityData {
   
   pub fn as_hostile(mut self) -> EntityData {
     self.hostile = true;
+    self
+  }
+  
+  pub fn with_ship_section(mut self, section: Box<ShipSection>) -> EntityData {
+    self.ship_sections.push(section);
     self
   }
 }

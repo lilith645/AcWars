@@ -1,3 +1,4 @@
+use crate::modules::entities::sections::{Hull, Thruster, WeaponMount};
 use crate::modules::entities::{Entity, EntityData};
 use crate::modules::projectiles::Projectile;
 
@@ -21,6 +22,11 @@ impl Brew {
                         .with_max_velocity(500.0)
                         .with_inertia(0.33)
                         .with_health(50.0)
+                        .with_ship_section(Box::new(Hull::new()))
+                        .with_ship_section(Box::new(Thruster::new()))
+                        .with_ship_section(Box::new(WeaponMount::new()))
+                        .with_ship_section(Box::new(WeaponMount::new()))
+                        .with_ship_section(Box::new(WeaponMount::new()))
     }
   }
   
