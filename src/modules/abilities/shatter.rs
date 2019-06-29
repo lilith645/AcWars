@@ -36,7 +36,7 @@ impl Ability for Shatter {
     let ship_pos = ship.position();
     let ship_size = ship.size();
     
-    let proj_dir = (target-ship_pos).normalize();
+    let proj_dir = math::normalise_vector2((target-ship_pos));
     
     let num_projectiles = 5;
     

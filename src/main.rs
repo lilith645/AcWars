@@ -73,6 +73,9 @@ fn main() {
   graphics.add_texture("SingleShotIcon".to_string(), "./resources/textures/abilities/SingleShot.png".to_string());
   // Backgrounds
   graphics.add_texture("bg_space".to_string(), "./resources/textures/backgrounds/space_tileable.png".to_string());
+  // Misc
+  graphics.add_texture("LeftArrow".to_string(), "./resources/textures/misc/LeftArrow.png".to_string());
+  graphics.add_texture("RightArrow".to_string(), "./resources/textures/misc/RightArrow.png".to_string());
   
   graphics.create_instance_buffer("Ftpl".to_string());
   graphics.create_instance_buffer("Gob".to_string());

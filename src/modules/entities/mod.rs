@@ -7,6 +7,7 @@ mod ship;
 mod brew;
 
 use maat_graphics::DrawCall;
+use maat_graphics::math;
 
 use crate::modules::entities::sections::{ShipSection, RepairBay, HullMaterial};
 use crate::modules::projectiles::Projectile;
@@ -234,12 +235,12 @@ pub trait Entity: EntityClone {
   }
   
   fn set_velocity_magnitude(&mut self, vel: f32) {
-    let vel_dir = self.data().velocity.normalize();
+    let vel_dir = math::normalise_vector2(self.data().velocity);
     self.mut_data().velocity = vel_dir*vel;
   }
   
   fn apply_acceleration_in_direction(&mut self, direction: Vector2<f32>) {
-    self.mut_data().acceleration = direction.normalize();
+    self.mut_data().acceleration = math::normalise_vector2(direction);
   }
   
   fn fire_projectile(&mut self, mut projectile: Box<Projectile>) {
@@ -264,7 +265,7 @@ pub trait Entity: EntityClone {
     self.mut_data().velocity += acceleration*max_velocity*(1.0-inertia)*delta_time;
     
     if self.data().velocity.magnitude() > self.data().max_velocity {
-      self.mut_data().velocity = velocity.normalize()*max_velocity;
+      self.mut_data().velocity = math::normalise_vector2(velocity)*max_velocity;
     }
     
     self.mut_data().acceleration = Vector2::new(0.0, 0.0);

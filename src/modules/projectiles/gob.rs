@@ -1,3 +1,5 @@
+use maat_graphics::math;
+
 use crate::modules::projectiles::{Projectile, ProjectileData};
 
 use std::f32::consts::PI;
@@ -18,7 +20,7 @@ impl Gob {
                                 center_pos.y+offset.y*direction.y);
     
     let size = Vector2::new(50.0, 50.0);
-    let velocity = direction.normalize()*800.0;
+    let velocity = math::normalise_vector2(direction)*800.0;
     let texture = "Gob".to_string();
     let sprite_rows = 3;
     let animation_timer = 0.04;

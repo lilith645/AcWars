@@ -33,6 +33,7 @@ impl WidgetIndex {
 
 pub struct PauseUi {
   data: UiData,
+  options_ui_opened: bool,
 }
 
 impl PauseUi {
@@ -76,6 +77,8 @@ impl PauseUi {
                     .with_widget(quit)
                     .with_widget(quit_text)
                     .with_ui(options_ui)
+                    .disable(),
+      options_ui_opened: false,
     }
   }
   
@@ -99,7 +102,18 @@ impl Ui for PauseUi {
     &mut self.data
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, window_size: Vector2<f32>, mut should_close: &mut bool, _delta_time: f32) {
+  fn check_if_needs_reenabling(&mut self) {
+    if self.options_ui_opened {
+      if let Some(uis) = &self.data().uis {
+        if !uis[UiIndex::OptionsUi.n()].enabled() {
+          self.enable();
+          self.options_ui_opened = false;
+        }
+      }
+    }
+  }
+  
+  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, mut should_close: &mut bool, _delta_time: f32) {
     
     let new_positions = PauseUi::realign_widget_positions(window_size,
                                                           self.data().widgets[WidgetIndex::Background.n()].size().y);
@@ -114,6 +128,8 @@ impl Ui for PauseUi {
     if self.data().widgets[WidgetIndex::Options.n()].pressed() {
       if let Some(ui) = &mut self.mut_data().uis {
         ui[UiIndex::OptionsUi.n()].enable();
+        self.mut_data().enabled = false;
+        self.options_ui_opened = true;
       }
     }
     

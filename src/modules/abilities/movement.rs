@@ -1,8 +1,10 @@
+use maat_graphics::math;
+
 use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::Projectile;
 
-use crate::cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2};
 
 #[derive(Clone)]
 pub struct Move {
@@ -33,7 +35,7 @@ impl Ability for Move {
   fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>) {
     let ship_pos = ship.position();
     
-    let direction = (target-ship_pos).normalize();
+    let mut direction = math::normalise_vector2(target-ship_pos);
     
     ship.apply_acceleration_in_direction(direction);
   }

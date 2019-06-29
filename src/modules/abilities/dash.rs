@@ -1,3 +1,5 @@
+use maat_graphics::math;
+
 use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::Projectile;
@@ -34,7 +36,7 @@ impl Ability for Dash {
   fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>) {
     let ship_pos = ship.position();
     
-    let direction = (target-ship_pos).normalize();
+    let direction = math::normalise_vector2(target-ship_pos);
     
     let timer = 0.25;
     ship.activate_buff(Box::new(MaxSpeedBuff::new().with_timer(timer).with_multiplier(5.0)));

@@ -27,6 +27,11 @@ impl UiData {
     }
   }
   
+  pub fn disable(mut self) -> UiData {
+    self.enabled = false;
+    self
+  }
+  
   pub fn with_widget(mut self, new_widget: Box<Widget>) -> UiData {
     self.widgets.push(new_widget);
     self
@@ -59,8 +64,27 @@ pub trait Ui {
     is_in_ui_space
   }
   
+  fn enabled(&self) -> bool {
+    let mut enabled = false;
+    if self.data().enabled {
+      enabled = true;
+    } else {
+      if let Some(uis) = &self.data().uis {
+        for ui in uis {
+          if ui.enabled() {
+            enabled = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    enabled
+  }
+  
   fn enable(&mut self) {
     self.mut_data().enabled = true;
+    
   }
   
   fn disable(&mut self) {
@@ -73,34 +97,34 @@ pub trait Ui {
     }
   }
   
-  fn update_inner_uis(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, window_size: Vector2<f32>, should_close: &mut bool, delta_time: f32) {
+  fn update_inner_uis(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, delta_time: f32) {
     if let Some(uis) = &mut self.mut_data().uis {
       for ui in uis {
-        ui.update(mouse_pos, left_mouse, window_size, should_close, delta_time);
+        ui.update(mouse_pos, left_mouse, escape_pressed, window_size, should_close, delta_time);
       }
     }
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, window_size: Vector2<f32>, should_close: &mut bool, delta_time: f32);
+  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, delta_time: f32);
+  fn check_if_needs_reenabling(&mut self);
   
-  fn update(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, window_size: Vector2<f32>, should_close: &mut bool, _delta_time: f32) {
-    self.update_inner_uis(mouse_pos, left_mouse, window_size, should_close, _delta_time);
+  fn update(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, _delta_time: f32) {
+    self.update_inner_uis(mouse_pos, left_mouse, escape_pressed, window_size, should_close, _delta_time);
     
     if !self.data().enabled {
+      self.check_if_needs_reenabling();
       return;
     }
     
-    self.update_ui(mouse_pos, left_mouse, window_size, should_close, _delta_time);
+    self.update_ui(mouse_pos, left_mouse, escape_pressed, window_size, should_close, _delta_time);
     self.update_widgets(mouse_pos, left_mouse, _delta_time);
   }
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
-    if !self.data().enabled {
-      return;
-    }
-    
-    for widget in &self.data().widgets {
-      widget.draw(draw_calls);
+    if self.data().enabled {
+      for widget in &self.data().widgets {
+        widget.draw(draw_calls);
+      }
     }
     
     if let Some(uis) = &self.data().uis {

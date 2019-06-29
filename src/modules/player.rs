@@ -4,7 +4,7 @@ use crate::modules::entities::Entity;
 use crate::modules::abilities::{Ability, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed, 
                                 Shatter, Shield, Dash};
 
-use crate::cgmath::Vector2;
+use crate::cgmath::{Vector2, InnerSpace};
 
 pub enum AbilityPosition {
   LeftClick,
@@ -39,7 +39,7 @@ impl Input {
     input
   }
   
-  pub fn update(&mut self, ship: &mut Box<Entity>, mouse_pos: Vector2<f32>, left_mouse: bool, middle_mouse: bool, right_mouse: bool, q_pressed: bool, window_size: Vector2<f32>, delta_time: f32) {
+  pub fn update(&mut self, ship: &mut Box<Entity>, left_stick_position: Vector2<f32>, a_button_pressed: bool, right_trigger_pressed: bool, mouse_pos: Vector2<f32>, left_mouse: bool, middle_mouse: bool, right_mouse: bool, q_pressed: bool, window_size: Vector2<f32>, delta_time: f32) {
     let mut target = mouse_pos;
     let ship_offset = ship.position()-window_size*0.5;
     target += ship_offset;
@@ -47,6 +47,17 @@ impl Input {
     if let Some(ability) = &mut self.left_click_ability {
       ability.update(delta_time);
       if left_mouse {
+        ability.activate(ship, target, window_size);
+      }
+      
+      let dead_zone = 0.01;
+      if left_stick_position.magnitude().abs() > dead_zone {
+        let x = if left_stick_position.x.abs() > dead_zone { left_stick_position.x } else { 0.0 };
+        let y = if left_stick_position.y.abs() > dead_zone { left_stick_position.y } else { 0.0 };
+        
+        let mut radius = 50.0;
+        target = ship.position()+Vector2::new(x, y);
+        
         ability.activate(ship, target, window_size);
       }
     }
@@ -60,14 +71,14 @@ impl Input {
     
     if let Some(ability) = &mut self.right_click_ability {
       ability.update(delta_time);
-      if right_mouse {
+      if right_mouse || right_trigger_pressed {
         ability.activate(ship, target, window_size);
       }
     }
     
     if let Some(ability) = &mut self.ability_one {
       ability.update(delta_time);
-      if q_pressed {
+      if q_pressed || a_button_pressed {
         ability.activate(ship, target, window_size);
       }
     }

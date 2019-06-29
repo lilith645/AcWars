@@ -47,7 +47,7 @@ impl Buff for SpeedBuff {
   }
   
   fn unapply_buff(&self, entity: &mut Box<Entity>) {
-    let dir = entity.velocity().normalize();
+    let dir = math::normalise_vector2(entity.velocity());
     let max_vel = entity.max_velocity();
     entity.set_velocity(dir*max_vel);
   }

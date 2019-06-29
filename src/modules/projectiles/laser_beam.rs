@@ -17,7 +17,7 @@ impl LaserBeam {
     
     let position = Vector2::new(center_pos.x+offset.x*direction.x+size.y*0.5*direction.x, 
                                 center_pos.y+offset.y*direction.y+size.y*0.5*direction.y);
-    let velocity = direction.normalize()*0.0;
+    let velocity = math::normalise_vector2(direction)*0.0;
     let texture = "LaserBeam".to_string();
     let sprite_rows = 1;
     let animation_timer = 0.06;

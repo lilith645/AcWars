@@ -77,6 +77,8 @@ impl Scene for LoadScreen {
       draw_calls.push(DrawCall::load_texture("ShatterIcon".to_string()));
       draw_calls.push(DrawCall::load_texture("ShieldIcon".to_string()));
       draw_calls.push(DrawCall::load_texture("SingleShotIcon".to_string()));
+      draw_calls.push(DrawCall::load_texture("LeftArrow".to_string()));
+      draw_calls.push(DrawCall::load_texture("RightArrow".to_string()));
     }
     
     draw_calls.push(DrawCall::set_texture_scale(1.0));

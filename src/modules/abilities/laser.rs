@@ -1,3 +1,5 @@
+use maat_graphics::math;
+
 use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::Entity;
 use crate::modules::projectiles::{Projectile, LaserBeam};
@@ -34,7 +36,7 @@ impl Ability for Laser {
     let ship_pos = ship.position();
     let ship_size = ship.size();
     
-    let proj_dir = (target-ship_pos).normalize();
+    let proj_dir = math::normalise_vector2(target-ship_pos);
     
     let mut projectile: Box<Projectile> = Box::new(LaserBeam::new(ship_pos, ship_size*0.5, proj_dir));
     

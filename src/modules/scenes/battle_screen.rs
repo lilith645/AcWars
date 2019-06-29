@@ -48,6 +48,7 @@ pub struct BattleScreen {
   camera: OrthoCamera,
   ability_ui: AbilityUi,
   uis: Vec<Box<Ui>>,
+  escape_pressed_last_frame: bool, 
 }
 
 impl BattleScreen {
@@ -79,6 +80,7 @@ impl BattleScreen {
       camera: OrthoCamera::new(window_size.x, window_size.y),
       ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
+      escape_pressed_last_frame: false,
     }
   }
   
@@ -95,6 +97,7 @@ impl BattleScreen {
       camera,
       ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
+      escape_pressed_last_frame: false,
     }
   }
 }
@@ -113,6 +116,8 @@ impl Scene for BattleScreen {
   }
   
   fn update(&mut self, _ui: Option<&imgui::Ui>, _lua: Option<&mut Lua>, delta_time: f32) {
+    self.mut_data().controller.update();
+    
     let dim = self.data().window_dim;
     let mouse_pos = self.data.mouse_pos;
     
@@ -120,18 +125,36 @@ impl Scene for BattleScreen {
     let middle_mouse = self.data.middle_mouse;
     let right_mouse = self.data.right_mouse;
     let q_pressed = self.data.keys.q_pressed();
+    let escape_pressed = self.data.keys.escape_pressed() && !self.escape_pressed_last_frame;
     
+    // Key presses
+    if escape_pressed {
+      if self.uis[UiIndex::PauseUi.n()].enabled() {
+        self.uis[UiIndex::PauseUi.n()].disable();
+      } else {
+        self.uis[UiIndex::PauseUi.n()].enable();
+      }
+    }
+    
+    // UI
     let mut should_close = false;
     for ui in &mut self.uis {
-      ui.update(mouse_pos, left_mouse, dim, &mut should_close, delta_time);
+      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, delta_time);
     }
     if should_close {
       self.mut_data().should_close = true;
     }
     
-    // Player
+    self.escape_pressed_last_frame = self.data().keys.escape_pressed();
+    if self.uis[UiIndex::PauseUi.n()].enabled() {
+      return;
+    }
     
-    self.input.update(&mut self.ship, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
+    // Player
+    let left_stick_position =  self.data().controller.left_stick_position();
+    let xbox_a_button = self.data().controller.a_button_pressed();
+    let right_trigger_pressed = self.data().controller.right_trigger_pressed();
+    self.input.update(&mut self.ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
     
     let (mut buffs, mut new_projectiles) = self.ship.update(delta_time);
     
@@ -246,11 +269,13 @@ impl Scene for BattleScreen {
     
     draw_calls.push(DrawCall::replace_ortho_camera(self.camera.clone()));
     
+    let bg_width = 1600.0;
+    let bg_height = 1200.0;
     for i in 0..10 {
       for j in 0..10 {
         draw_calls.push(
-          DrawCall::draw_textured(Vector2::new(width*0.5+width*(i as f32-4.0), height*0.5+height*(j as f32-4.0)),
-                                  Vector2::new(width*1.0, height*1.0),
+          DrawCall::draw_textured(Vector2::new(bg_width*0.5+bg_width*(i as f32-4.0), bg_height*0.5+bg_height*(j as f32-4.0)),
+                                  Vector2::new(bg_width*1.0, bg_height*1.0),
                                   0.0,
                                   "bg_space".to_string())
         );
