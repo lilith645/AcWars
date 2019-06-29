@@ -11,6 +11,7 @@ use crate::modules::buffs::Buff;
 use crate::modules::entities::{Entity, Ship, Brew};
 use crate::modules::projectiles::{Projectile};
 use crate::modules::controllers::{EntityController, AbilitySpamAi};
+use crate::modules::areas::{Area, SolarSystem};
 use crate::modules::player;
 use crate::modules::ui::{Ui, PauseUi, AbilityUi};
 
@@ -29,20 +30,12 @@ impl UiIndex {
   }
 }
 
-
-#[derive(Clone)]
-pub struct FullEntity {
-  pub ai: Box<EntityController>,
-  pub entity: Box<Entity>,
-  pub buffs: Vec<Box<Buff>>
-}
-
 pub struct BattleScreen {
   data: SceneData,
+  areas: Vec<Box<Area>>,
   input: player::Input,
   ship: Box<Entity>,
   buffs: Vec<Box<Buff>>,
-  hostiles: Vec<FullEntity>,
   projectiles: Vec<Box<Projectile>>,
   zoom: f32,
   camera: OrthoCamera,
@@ -55,26 +48,10 @@ impl BattleScreen {
   pub fn new(window_size: Vector2<f32>) -> BattleScreen {
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
+      areas: vec!(Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0)))),
       input: player::Input::new(),
       ship: Box::new(Ship::new()),
       buffs: Vec::new(),
-      hostiles: vec!(
-        FullEntity { 
-          ai: Box::new(AbilitySpamAi::new()), 
-          entity: Box::new(Brew::new().as_hostile().with_position(Vector2::new(640.0, 1500.0))),
-          buffs: Vec::new(),
-        },
-        FullEntity { 
-          ai: Box::new(AbilitySpamAi::new()), 
-          entity: Box::new(Brew::new().as_hostile().with_position(Vector2::new(740.0, 1500.0))),
-          buffs: Vec::new(),
-        },
-        FullEntity { 
-          ai: Box::new(AbilitySpamAi::new()), 
-          entity: Box::new(Brew::new().as_hostile().with_position(Vector2::new(840.0, 1500.0))),
-          buffs: Vec::new(),
-        },
-      ),
       projectiles: Vec::new(),
       zoom: 0.75,
       camera: OrthoCamera::new(window_size.x, window_size.y),
@@ -84,14 +61,14 @@ impl BattleScreen {
     }
   }
   
-  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, ship: Box<Entity>, buffs: Vec<Box<Buff>>, hostiles: Vec<FullEntity>, projectiles: Vec<Box<Projectile>>, zoom: f32) -> BattleScreen {
+  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<Box<Area>>, ship: Box<Entity>, buffs: Vec<Box<Buff>>, projectiles: Vec<Box<Projectile>>, zoom: f32) -> BattleScreen {
     
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()), 
+      areas,
       input: player::Input::new(),
       ship,
       buffs,
-      hostiles,
       projectiles,
       zoom,
       camera,
@@ -112,7 +89,7 @@ impl Scene for BattleScreen {
   }
   
   fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
-    Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.ship.clone(), self.buffs.clone(), self.hostiles.clone(), self.projectiles.clone(), self.zoom))
+    Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.buffs.clone(), self.projectiles.clone(), self.zoom))
   }
   
   fn update(&mut self, _ui: Option<&imgui::Ui>, _lua: Option<&mut Lua>, delta_time: f32) {
@@ -173,44 +150,10 @@ impl Scene for BattleScreen {
       self.buffs.push(buff);
     }
     
-    // hostiles
-    
-    let ship_pos = self.ship.position();
-    for hostile in &mut self.hostiles {
-      hostile.ai.update(&mut hostile.entity, ship_pos, dim, delta_time);
-      
-      let mut offset = 0;
-      for i in 0..hostile.buffs.len() {
-        if offset > i {
-          break;
-        }
-        hostile.buffs[i-offset].update(&mut hostile.entity, delta_time);
-        if !hostile.buffs[i-offset].should_exist() {
-          hostile.buffs[i-offset].unapply_buff(&mut hostile.entity);
-          hostile.buffs.remove(i-offset);
-          offset += 1;
-        }
-      }
-    }
-    
-    let mut offset = 0;
-    for i in 0..self.hostiles.len() {
-      if i < offset {
-        break;
-      }
-      
-      let (hostile_buffs, hostile_proj) = self.hostiles[i-offset].entity.update(delta_time);
-      for buff in hostile_buffs {
-        buff.apply_buff(&mut self.hostiles[i-offset].entity);
-        self.hostiles[i-offset].buffs.push(buff);
-      }
-      for projectile in hostile_proj {
+    for area in &mut self.areas {
+      let projectiles = area.update(&mut self.ship, dim, delta_time);
+      for projectile in projectiles {
         new_projectiles.push(projectile);
-      }
-      
-      if !self.hostiles[i-offset].entity.should_exist() {
-        self.hostiles.remove(i-offset);
-        offset += 1;
       }
     }
     
@@ -233,16 +176,13 @@ impl Scene for BattleScreen {
       }
     }
     
-    
     // Check collisions 
     for i in 0..self.projectiles.len() {
       if self.projectiles[i].should_exist() {
         match self.projectiles[i].hostile() {
           false => {
-            for hostile in &mut self.hostiles {
-              if hostile.entity.should_exist() {
-                self.projectiles[i].collide_with(&mut hostile.entity);
-              }
+            for area in &mut self.areas {
+              area.collide_with(&mut self.projectiles[i]);
             }
           },
           true => {
@@ -286,20 +226,21 @@ impl Scene for BattleScreen {
       projectile.draw(draw_calls);
     }
     
-    for hostile in &self.hostiles {
-      hostile.entity.draw(draw_calls);
+    for area in &self.areas {
+      area.draw(draw_calls);
     }
     
     self.ship.draw(draw_calls);
     
+    draw_calls.push(DrawCall::draw_instanced("Sun".to_string(), "Sun".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Ftpl".to_string(), "Ftpl".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Gob".to_string(), "Gob".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Brew".to_string(), "Brew".to_string()));
     draw_calls.push(DrawCall::draw_instanced("LaserBeam".to_string(), "LaserBeam".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Bulbz".to_string(), "Bulbz".to_string()));
     
-    for hostile in &self.hostiles {
-      hostile.entity.draw_ship_ui(draw_calls);
+    for area in &self.areas {
+      area.draw_ship_ui(draw_calls);
     }
     
     self.ship.draw_ship_ui(draw_calls);

@@ -57,10 +57,14 @@ fn main() {
   // Ships
   graphics.add_texture("Bulbz".to_string(), "./resources/textures/ships/Bulbz.png".to_string());
   graphics.add_texture("Brew".to_string(), "./resources/textures/ships/Brew.png".to_string());
+  // Entities
+  graphics.add_texture("Sun".to_string(), "./resources/textures/entities/Sun_glasses.png".to_string());
   // Projectiles
   graphics.add_texture("Ftpl".to_string(), "./resources/textures/projectiles/Ftpl.png".to_string());
   graphics.add_texture("Gob".to_string(), "./resources/textures/projectiles/Gob.png".to_string());
   graphics.add_texture("LaserBeam".to_string(), "./resources/textures/projectiles/laserbeam.png".to_string());
+  // Backgrounds
+  graphics.add_texture("bg_space".to_string(), "./resources/textures/backgrounds/space_tileable.png".to_string());
   // Abilities
   graphics.add_texture("DashIcon".to_string(), "./resources/textures/abilities/Dash.png".to_string());
   graphics.add_texture("DoubleShotIcon".to_string(), "./resources/textures/abilities/DoubleShot.png".to_string());
@@ -71,12 +75,11 @@ fn main() {
   graphics.add_texture("ShatterIcon".to_string(), "./resources/textures/abilities/Shatter.png".to_string());
   graphics.add_texture("ShieldIcon".to_string(), "./resources/textures/abilities/Shield.png".to_string());
   graphics.add_texture("SingleShotIcon".to_string(), "./resources/textures/abilities/SingleShot.png".to_string());
-  // Backgrounds
-  graphics.add_texture("bg_space".to_string(), "./resources/textures/backgrounds/space_tileable.png".to_string());
   // Misc
   graphics.add_texture("LeftArrow".to_string(), "./resources/textures/misc/LeftArrow.png".to_string());
   graphics.add_texture("RightArrow".to_string(), "./resources/textures/misc/RightArrow.png".to_string());
   
+  graphics.create_instance_buffer("Sun".to_string());
   graphics.create_instance_buffer("Ftpl".to_string());
   graphics.create_instance_buffer("Gob".to_string());
   graphics.create_instance_buffer("Bulbz".to_string());

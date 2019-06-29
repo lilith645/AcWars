@@ -1,10 +1,12 @@
 pub use self::ship::Ship;
 pub use self::brew::Brew;
+pub use self::sun::Sun;
 
 pub mod sections;
 
 mod ship;
 mod brew;
+mod sun;
 
 use maat_graphics::DrawCall;
 use maat_graphics::math;
@@ -12,10 +14,18 @@ use maat_graphics::math;
 use crate::modules::entities::sections::{ShipSection, RepairBay, HullMaterial};
 use crate::modules::projectiles::Projectile;
 use crate::modules::buffs::Buff;
+use crate::modules::controllers::EntityController;
 
 use std::f32::consts::PI;
 
 use crate::cgmath::{Vector2, Vector3, Vector4, InnerSpace};
+
+#[derive(Clone)]
+pub struct FullEntity {
+  pub ai: Box<EntityController>,
+  pub entity: Box<Entity>,
+  pub buffs: Vec<Box<Buff>>
+}
 
 #[derive(Clone)]
 pub struct EntityData {

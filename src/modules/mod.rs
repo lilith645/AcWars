@@ -8,4 +8,5 @@ pub mod abilities;
 pub mod entities;
 pub mod buffs;
 pub mod ui;
+pub mod areas;
 mod animation;
