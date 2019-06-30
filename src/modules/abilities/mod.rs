@@ -28,7 +28,7 @@ mod no_ability;
 
 use maat_graphics::DrawCall;
 
-use crate::modules::entities::Entity;
+use crate::modules::entities::{Entity, Hostility};
 use crate::modules::projectiles::Projectile;
 
 use crate::cgmath::{Vector2, Vector4};
@@ -113,9 +113,9 @@ pub trait Ability: AbilityClone {
     }
   }
   
-  fn activate(&mut self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>) {
+  fn activate(&mut self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>, parent_hostility: &Hostility) {
     if self.can_activate() {
-      self.applied_to(ship, target, window_size);
+      self.applied_to(ship, target, window_size, parent_hostility);
       self.mut_data().time_left = self.data().timer;
     }
   }
@@ -124,7 +124,7 @@ pub trait Ability: AbilityClone {
     (self.data().ability_type == AbilityType::Active) && (self.data().time_left <= 0.0)
   }
   
-  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>);
+  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>, parent_hostility: &Hostility);
   fn apply_passive_effect(&self, projectile: &mut Box<Projectile>);
   
   fn draw(&self, position: Vector2<f32>, draw_calls: &mut Vec<DrawCall>) {

@@ -10,7 +10,7 @@ use maat_graphics::DrawCall;
 use maat_graphics::math;
 
 use crate::modules::Animation;
-use crate::modules::entities::Entity;
+use crate::modules::entities::{Entity, Hostility};
 use crate::modules::abilities::Ability;
 
 use crate::cgmath::{Vector2, Vector3, Vector4};
@@ -25,7 +25,7 @@ pub struct ProjectileData {
   acceleration: Vector2<f32>,
   animation: Animation,
   damage: f32,
-  hostile: bool,
+  hostility: Hostility,
   hostility_locked: bool,
   lifetime_left: f32,
   should_exist: bool,
@@ -43,7 +43,7 @@ impl ProjectileData {
       acceleration: Vector2::new(0.0, 0.0),
       animation: Animation::new(1, 1.0),
       damage: 1.0,
-      hostile: false,
+      hostility: Hostility::Friendly,
       hostility_locked: false,
       lifetime_left: 5.0,
       should_exist: true,
@@ -61,7 +61,7 @@ impl ProjectileData {
       acceleration: Vector2::new(0.0, 0.0),
       animation: Animation::new(sprite_rows, animation_timer),
       damage: 1.0,
-      hostile: false,
+      hostility: Hostility::Friendly,
       hostility_locked: false,
       lifetime_left: 5.0,
       should_exist: true,
@@ -140,7 +140,7 @@ pub trait Projectile: ProjectileClone {
   }
   
   fn hostile(&self) -> bool {
-    self.data().hostile
+    self.data().hostility.is_hostile()
   }
   
   fn collision_circles(&self) -> Vec<Vector3<f32>> {
@@ -169,8 +169,22 @@ pub trait Projectile: ProjectileClone {
   
   fn make_hostile(&mut self) {
     if !self.data().hostility_locked { 
-      self.mut_data().hostile = true;
+      self.mut_data().hostility.make_hostile();
     }
+  }
+  
+  fn make_neutral(&mut self) {
+    if !self.data().hostility_locked { 
+      self.mut_data().hostility.make_neutral();
+    }
+  }
+  
+  fn can_hit(&self, hostility: &Hostility) -> bool {
+    self.data().hostility.check_can_hit(hostility)
+  }
+  
+  fn can_hurt(&self, hostility: &Hostility) -> bool {
+    self.data().hostility.check_can_hit(hostility)
   }
   
   fn add_passive(&mut self, passive: Box<Ability>) {
@@ -193,16 +207,21 @@ pub trait Projectile: ProjectileClone {
     for e_circle in entity_circles {
       for p_circle in &projectile_circles {
         if math::circle_collision(e_circle, *p_circle) {
-          entity.hit(self.data().damage);
-          
-          let pos = self.data().position;
-          let vel = self.data().velocity;
-          
-          for passive in &mut self.mut_data().passives {
-            passive.applied_to(entity, pos+vel, Vector2::new(0.0, 0.0));
+          if self.data().hostility.check_can_hurt(entity.hostility()) {
+            entity.hit(self.data().damage);
+            
+            let pos = self.data().position;
+            let vel = self.data().velocity;
+            
+            let hostility  = self.data().hostility.clone();
+            
+            for passive in &mut self.mut_data().passives {
+              passive.applied_to(entity, pos+vel, Vector2::new(0.0, 0.0), &hostility);
+            }
           }
           
           self.mut_data().should_exist = false;
+          
           collided = true;
           break;
         }
@@ -226,14 +245,16 @@ pub trait Projectile: ProjectileClone {
   fn draw_collision_circles(&self, draw_calls: &mut Vec<DrawCall>) {
     let circles = self.collision_circles();
     
-    let colour = if self.data().hostile {
+    let colour = if self.data().hostility.is_hostile() {
       Vector4::new(1.0, 0.0, 0.0, 1.0)
-    } else {
+    } else if self.data().hostility.is_friendly() {
       Vector4::new(0.0, 0.0, 1.0, 1.0)
+    } else {
+      Vector4::new(0.0, 1.0, 0.0, 1.0)
     };
     
     for circle in &circles {
-      draw_calls.push(DrawCall::draw_coloured(circle.xy(), Vector2::new(circle.z, circle.z), colour, 0.0));
+      draw_calls.push(DrawCall::draw_coloured(circle.xy(), Vector2::new(circle.z*2.0, circle.z*2.0), colour, 0.0));
     }
   }
 }

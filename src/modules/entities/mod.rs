@@ -20,6 +20,77 @@ use std::f32::consts::PI;
 
 use crate::cgmath::{Vector2, Vector3, Vector4, InnerSpace};
 
+#[derive(Clone, PartialEq)]
+pub enum Hostility {
+  Hostile,
+  Neutral,
+  Friendly,
+}
+
+impl Hostility {
+  pub fn is_hostile(&self) -> bool {
+    *self == Hostility::Hostile
+  }
+  
+  pub fn is_neutral(&self) -> bool {
+    *self == Hostility::Neutral
+  }
+  
+  pub fn is_friendly(&self) -> bool {
+    *self == Hostility::Friendly
+  }
+  
+  pub fn make_hostile(&mut self) {
+    *self = Hostility::Hostile;
+  }
+  
+  pub fn make_neutral(&mut self) {
+    *self = Hostility::Neutral;
+  }
+  
+  pub fn make_friendly(&mut self) {
+    *self = Hostility::Friendly;
+  }
+  
+  pub fn check_can_hit(&self, hostility: &Hostility) -> bool {
+    if hostility == self {
+      if self.is_neutral() {
+        true
+      } else {
+        false
+      }
+    } else {
+      true
+    }
+  }
+  
+  pub fn check_can_hurt(&self, hostility: &Hostility) -> bool {
+    if self.check_can_hit(hostility) {
+      match *self {
+        Hostility::Friendly => {
+          if hostility.is_hostile() {
+            true
+          } else {
+            false
+          }
+        },
+        Hostility::Neutral => {
+          true
+        },
+        Hostility::Hostile => {
+          if hostility.is_friendly() {
+            true
+          } else {
+            false
+          }
+        }
+      }
+    } else {
+      false
+    }
+  }
+}
+
 #[derive(Clone)]
 pub struct FullEntity {
   pub ai: Box<EntityController>,
@@ -42,7 +113,7 @@ pub struct EntityData {
   initial_health: f32,
   projectiles: Vec<Box<Projectile>>,
   buffs: Vec<Box<Buff>>,
-  hostile: bool,
+  hostility: Hostility,
   should_exist: bool,
   ship_sections: Vec<Box<ShipSection>>,
   hull_material: Box<ShipSection>,
@@ -65,7 +136,7 @@ impl EntityData {
       initial_health: 100.0,
       projectiles: Vec::new(),
       buffs: Vec::new(),
-      hostile: false,
+      hostility: Hostility::Friendly,
       should_exist: true,
       ship_sections: Vec::new(),
       hull_material: Box::new(HullMaterial::new()),
@@ -88,7 +159,7 @@ impl EntityData {
       initial_health: 100.0,
       projectiles: Vec::new(),
       buffs: Vec::new(),
-      hostile: false,
+      hostility: Hostility::Friendly,
       should_exist: true,
       ship_sections: Vec::new(),
       hull_material: Box::new(HullMaterial::new()),
@@ -123,7 +194,12 @@ impl EntityData {
   }
   
   pub fn as_hostile(mut self) -> EntityData {
-    self.hostile = true;
+    self.hostility.make_hostile();
+    self
+  }
+  
+  pub fn as_neutral(mut self) -> EntityData {
+    self.hostility.make_neutral();
     self
   }
   
@@ -175,6 +251,10 @@ pub trait Entity: EntityClone {
   
   fn velocity(&self) -> Vector2<f32> {
     self.data().velocity
+  }
+  
+  fn hostility(&self) -> &Hostility {
+    &self.data().hostility
   }
   
   fn max_velocity(&self) -> f32 {
@@ -254,8 +334,10 @@ pub trait Entity: EntityClone {
   }
   
   fn fire_projectile(&mut self, mut projectile: Box<Projectile>) {
-    if self.data().hostile {
+    if self.data().hostility.is_hostile() {
       projectile.make_hostile(); 
+    } else if self.data().hostility.is_neutral() {
+      projectile.make_neutral();
     }
     
     self.mut_data().projectiles.push(projectile);
@@ -317,13 +399,16 @@ pub trait Entity: EntityClone {
   
   fn draw_collision_circles(&self, draw_calls: &mut Vec<DrawCall>) {
     let circles = self.collision_circles();
-    let colour = if self.data().hostile {
+    let colour = if self.data().hostility.is_hostile() {
       Vector4::new(1.0, 0.0, 0.0, 1.0)
-    } else {
+    } else if self.data().hostility.is_friendly() {
       Vector4::new(0.0, 0.0, 1.0, 1.0)
+    } else {
+      Vector4::new(0.0, 1.0, 0.0, 1.0)
     };
+    
     for circle in &circles {
-      draw_calls.push(DrawCall::draw_coloured(circle.xy(), Vector2::new(circle.z, circle.z), colour, 0.0));
+      draw_calls.push(DrawCall::draw_coloured(circle.xy(), Vector2::new(circle.z*2.0, circle.z*2.0), colour, 0.0));
     }
   }
 }

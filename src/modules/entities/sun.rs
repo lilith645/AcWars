@@ -27,6 +27,11 @@ impl Sun {
     self.data = self.data.as_hostile();
     self
   }
+  
+  pub fn as_neutral(mut self) -> Sun {
+    self.data = self.data.as_neutral();
+    self
+  }
 }
 
 impl Entity for Sun {
@@ -39,7 +44,7 @@ impl Entity for Sun {
   }
   
   fn collision_information(&self) -> Vec<(Vector2<f32>, f32)> {
-    let radius = self.data().size.x.min(self.data().size.y)*0.5 * 0.7;
+    let radius = self.data().size.x.max(self.data().size.y)*0.5 * 0.7;
     
     vec!((Vector2::new(0.0, 0.0), radius))
   }

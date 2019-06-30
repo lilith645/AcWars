@@ -44,10 +44,12 @@ impl Input {
     let ship_offset = ship.position()-window_size*0.5;
     target += ship_offset;
     
+    let hostility = ship.hostility().clone();
+    
     if let Some(ability) = &mut self.left_click_ability {
       ability.update(delta_time);
       if left_mouse {
-        ability.activate(ship, target, window_size);
+        ability.activate(ship, target, window_size, &hostility);
       }
       
       let dead_zone = 0.01;
@@ -58,28 +60,28 @@ impl Input {
         let mut radius = 50.0;
         target = ship.position()+Vector2::new(x, y);
         
-        ability.activate(ship, target, window_size);
+        ability.activate(ship, target, window_size, &hostility);
       }
     }
     
     if let Some(ability) = &mut self.middle_click_ability {
       ability.update(delta_time);
       if middle_mouse {
-        ability.activate(ship, target, window_size);
+        ability.activate(ship, target, window_size, &hostility);
       }
     }
     
     if let Some(ability) = &mut self.right_click_ability {
       ability.update(delta_time);
       if right_mouse || right_trigger_pressed {
-        ability.activate(ship, target, window_size);
+        ability.activate(ship, target, window_size, &hostility);
       }
     }
     
     if let Some(ability) = &mut self.ability_one {
       ability.update(delta_time);
       if q_pressed || a_button_pressed {
-        ability.activate(ship, target, window_size);
+        ability.activate(ship, target, window_size, &hostility);
       }
     }
     

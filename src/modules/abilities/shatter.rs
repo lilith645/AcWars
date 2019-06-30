@@ -1,7 +1,7 @@
 use maat_graphics::math;
 
 use crate::modules::abilities::{Ability, AbilityData};
-use crate::modules::entities::Entity;
+use crate::modules::entities::{Entity, Hostility};
 use crate::modules::projectiles::{Projectile, Ftpl};
 
 use crate::cgmath::{Vector2, InnerSpace};
@@ -32,7 +32,7 @@ impl Ability for Shatter {
     projectile.add_passive(Box::new(self.clone()));
   }
   
-  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, _window_size: Vector2<f32>) {
+  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, _window_size: Vector2<f32>, parent_hostility: &Hostility) {
     let ship_pos = ship.position();
     let ship_size = ship.size();
     
@@ -60,6 +60,11 @@ impl Ability for Shatter {
     }
     
     for projectile in &mut projectiles {
+      match *parent_hostility {
+        Hostility::Friendly => {  },
+        Hostility::Neutral => { projectile.make_neutral() },
+        Hostility::Hostile => { projectile.make_hostile() },
+      }
       projectile.lock_hostility();
     }
     

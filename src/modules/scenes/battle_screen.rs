@@ -179,16 +179,12 @@ impl Scene for BattleScreen {
     // Check collisions 
     for i in 0..self.projectiles.len() {
       if self.projectiles[i].should_exist() {
-        match self.projectiles[i].hostile() {
-          false => {
-            for area in &mut self.areas {
-              area.collide_with(&mut self.projectiles[i]);
-            }
-          },
-          true => {
-            if self.ship.should_exist() {
-              self.projectiles[i].collide_with(&mut self.ship);
-            }
+        for area in &mut self.areas {
+          area.collide_with(&mut self.projectiles[i]);
+        }
+        if self.projectiles[i].can_hit(self.ship.hostility()) {
+          if self.ship.should_exist() {
+            self.projectiles[i].collide_with(&mut self.ship);
           }
         }
       }
@@ -249,11 +245,11 @@ impl Scene for BattleScreen {
     for projectile in &self.projectiles {
       projectile.draw_collision_circles(draw_calls);
     }
-    for hostile in &self.hostiles {
-      hostile.entity.draw_collision_circles(draw_calls);
+    for area in &self.areas {
+      area.draw_collision_circles(draw_calls);
     }
-    self.ship.draw_collision_circles(draw_calls);*/
-    
+    self.ship.draw_collision_circles(draw_calls);
+    */
     draw_calls.push(DrawCall::set_texture_scale(1.0));
     draw_calls.push(DrawCall::reset_ortho_camera());
     

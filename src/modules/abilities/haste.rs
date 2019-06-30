@@ -1,5 +1,5 @@
 use crate::modules::abilities::{Ability, AbilityData};
-use crate::modules::entities::Entity;
+use crate::modules::entities::{Entity, Hostility};
 use crate::modules::projectiles::Projectile;
 use crate::modules::buffs::MaxSpeedBuff;
 
@@ -31,7 +31,7 @@ impl Ability for Haste {
     
   }
   
-  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>) {
+  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>, _parent_hostility: &Hostility) {
     ship.activate_buff(Box::new(MaxSpeedBuff::new()));
   }
 }

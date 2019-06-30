@@ -1,7 +1,7 @@
 use maat_graphics::math;
 
 use crate::modules::abilities::{Ability, AbilityData};
-use crate::modules::entities::Entity;
+use crate::modules::entities::{Entity, Hostility};
 use crate::modules::projectiles::Projectile;
 
 use crate::cgmath::{Vector2};
@@ -32,7 +32,7 @@ impl Ability for Move {
     
   }
   
-  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>) {
+  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>, _parent_hostility: &Hostility) {
     let ship_pos = ship.position();
     
     let mut direction = math::normalise_vector2(target-ship_pos);

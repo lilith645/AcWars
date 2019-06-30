@@ -137,7 +137,9 @@ fn main() {
     }
     
     game.set_window_dimensions(dimensions);
-    
+    if total_delta_time > 0.05 {
+      total_delta_time = 0.0;
+    }
     let delta_steps = (total_delta_time / DELTA_STEP).floor() as usize;
     
     for _ in 0..delta_steps {
