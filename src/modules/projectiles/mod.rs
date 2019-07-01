@@ -1,9 +1,11 @@
-pub use ftpl::Ftpl;
-pub use gob::Gob;
-pub use laser_beam::LaserBeam;
+pub use self::ftpl::Ftpl;
+pub use self::gob::Gob;
+pub use self::laser_beam::LaserBeam;
+pub use self::aoe::Aoe;
 
 mod gob;
 mod ftpl;
+mod aoe;
 mod laser_beam;
 
 use maat_graphics::DrawCall;
@@ -94,6 +96,11 @@ impl ProjectileData {
     self
   }
   
+  pub fn with_life_time(mut self, life_time: f32) -> ProjectileData {
+    self.lifetime_left = life_time;
+    self
+  }
+  
   pub fn animate_backwards(mut self) -> ProjectileData {
     self.animation = self.animation.animate_backwards();
     self
@@ -134,6 +141,10 @@ pub trait Projectile: ProjectileClone {
   fn collision_information(&self) -> Vec<(Vector2<f32>, f32)>;
   
   fn update(&mut self, delta_time: f32);
+  
+  fn damage(&self) -> f32 {
+    self.data().damage
+  }
   
   fn should_exist(&self) -> bool {
     self.data().should_exist

@@ -7,24 +7,24 @@ use crate::modules::abilities::Ability;
 use crate::cgmath::{Vector2, InnerSpace};
 
 #[derive(Clone)]
-pub struct AbilitySpamAi {
+pub struct IdleAi {
   data: EntityControllerData,
 }
 
-impl AbilitySpamAi {
-  pub fn new() -> AbilitySpamAi {
-    AbilitySpamAi {
+impl IdleAi {
+  pub fn new() -> IdleAi {
+    IdleAi {
       data: EntityControllerData::new()
     }
   }
   
-  pub fn with_ability(mut self, ability: Box<Ability>) -> AbilitySpamAi {
+  pub fn with_ability(mut self, ability: Box<Ability>) -> IdleAi {
     self.data = self.data.with_ability(ability);
     self
   }
 }
 
-impl EntityController for AbilitySpamAi {
+impl EntityController for IdleAi {
   fn data(&self) -> &EntityControllerData {
     &self.data
   }
@@ -40,13 +40,5 @@ impl EntityController for AbilitySpamAi {
       ability.update(delta_time);
       ability.activate(ship, target, window_size, &hostility);
     }
-    
-    let mut vel_dir = target - ship.position();
-    if vel_dir.magnitude() < 400.0 {
-      vel_dir = math::rotate_vector2(vel_dir, 90.0);
-    }
-    ship.apply_acceleration_in_direction(vel_dir);
-    
-    ship.set_facing(target);
   }
 }

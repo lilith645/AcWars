@@ -11,7 +11,7 @@ use crate::modules::buffs::Buff;
 use crate::modules::entities::{Entity, Ship, Brew};
 use crate::modules::projectiles::{Projectile};
 use crate::modules::controllers::{EntityController, AbilitySpamAi};
-use crate::modules::areas::{Area, SolarSystem};
+use crate::modules::areas::{Area, SolarSystem, AstroidField};
 use crate::modules::player;
 use crate::modules::ui::{Ui, PauseUi, AbilityUi};
 
@@ -48,7 +48,8 @@ impl BattleScreen {
   pub fn new(window_size: Vector2<f32>) -> BattleScreen {
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
-      areas: vec!(Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0)))),
+      areas: vec!(Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0))),
+                  Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(500.0, 1000.0)))),
       input: player::Input::new(),
       ship: Box::new(Ship::new()),
       buffs: Vec::new(),
@@ -158,7 +159,6 @@ impl Scene for BattleScreen {
     }
     
     // Projectiles
-    
     for new_projectile in new_projectiles {
       self.projectiles.push(new_projectile);
     }
@@ -228,6 +228,7 @@ impl Scene for BattleScreen {
     
     self.ship.draw(draw_calls);
     
+    draw_calls.push(DrawCall::draw_instanced("Astroid".to_string(), "Astroid".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Sun".to_string(), "Sun".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Ftpl".to_string(), "Ftpl".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Gob".to_string(), "Gob".to_string()));

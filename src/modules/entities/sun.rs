@@ -19,7 +19,8 @@ impl Sun {
       data: EntityData::new(position, size, texture.to_string())
                         .with_max_velocity(0.0)
                         .with_inertia(0.0)
-                        .with_health(1000.0),
+                        .with_health(1000.0)
+                        .with_health_regen(500.0),
     }
   }
   

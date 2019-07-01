@@ -1,6 +1,10 @@
 pub use self::ability_spam_ai::AbilitySpamAi;
+pub use self::idle_ai::IdleAi;
+pub use self::floating_ai::FloatingAi;
 
 mod ability_spam_ai;
+mod idle_ai;
+mod floating_ai;
 
 use crate::modules::abilities::{Ability};
 use crate::modules::entities::Entity;
@@ -45,5 +49,5 @@ pub trait EntityController: EntityControllerClone {
   fn data(&self) -> &EntityControllerData;
   fn mut_data(&mut self) -> &mut EntityControllerData;
   
-  fn update(&mut self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>, delta_time: f32);
+  fn update(&mut self, ship: &mut Box<Entity>, target: Vector2<f32>, area_pos: Vector2<f32>, area_size: Vector2<f32>, window_size: Vector2<f32>, delta_time: f32);
 }

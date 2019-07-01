@@ -59,6 +59,7 @@ fn main() {
   graphics.add_texture("Brew".to_string(), "./resources/textures/ships/Brew.png".to_string());
   // Entities
   graphics.add_texture("Sun".to_string(), "./resources/textures/entities/Sun_glasses.png".to_string());
+  graphics.add_texture("Astroid".to_string(), "./resources/textures/entities/Astroid.png".to_string());
   // Projectiles
   graphics.add_texture("Ftpl".to_string(), "./resources/textures/projectiles/Ftpl.png".to_string());
   graphics.add_texture("Gob".to_string(), "./resources/textures/projectiles/Gob.png".to_string());
@@ -80,6 +81,7 @@ fn main() {
   graphics.add_texture("RightArrow".to_string(), "./resources/textures/misc/RightArrow.png".to_string());
   
   graphics.create_instance_buffer("Sun".to_string());
+  graphics.create_instance_buffer("Astroid".to_string());
   graphics.create_instance_buffer("Ftpl".to_string());
   graphics.create_instance_buffer("Gob".to_string());
   graphics.create_instance_buffer("Bulbz".to_string());

@@ -1,6 +1,8 @@
 pub use self::solar_system::SolarSystem;
+pub use self::astroid_field::AstroidField;
 
 mod solar_system;
+mod astroid_field;
 
 use maat_graphics::DrawCall;
 use crate::modules::projectiles::Projectile;
@@ -95,8 +97,10 @@ pub trait Area: AreaClone {
     
     // entities
     let ship_pos = ship.position();
+    let area_pos = self.data().position;
+    let area_size = self.data().size;
     for object in &mut self.mut_data().entities {
-      object.ai.update(&mut object.entity, ship_pos, window_size, delta_time);
+      object.ai.update(&mut object.entity, ship_pos, area_pos, area_size, window_size, delta_time);
       
       let mut offset = 0;
       for i in 0..object.buffs.len() {

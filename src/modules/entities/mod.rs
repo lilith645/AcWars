@@ -1,12 +1,14 @@
 pub use self::ship::Ship;
 pub use self::brew::Brew;
 pub use self::sun::Sun;
+pub use self::astroid::Astroid;
 
 pub mod sections;
 
 mod ship;
 mod brew;
 mod sun;
+mod astroid;
 
 use maat_graphics::DrawCall;
 use maat_graphics::math;
@@ -109,8 +111,9 @@ pub struct EntityData {
   acceleration: Vector2<f32>,
   inertia: f32,
   health: f32,
+  health_regen: f32, // per second
+  max_health: f32,
   shield: f32,
-  initial_health: f32,
   projectiles: Vec<Box<Projectile>>,
   buffs: Vec<Box<Buff>>,
   hostility: Hostility,
@@ -132,8 +135,9 @@ impl EntityData {
       acceleration: Vector2::new(0.0, 0.0),
       inertia: 0.33,
       health: 100.0,
+      health_regen: 0.0,
+      max_health: 100.0,
       shield: 0.0,
-      initial_health: 100.0,
       projectiles: Vec::new(),
       buffs: Vec::new(),
       hostility: Hostility::Friendly,
@@ -155,8 +159,9 @@ impl EntityData {
       acceleration: Vector2::new(0.0, 0.0),
       inertia: 0.33,
       health: 100.0,
+      health_regen: 0.0,
+      max_health: 100.0,
       shield: 0.0,
-      initial_health: 100.0,
       projectiles: Vec::new(),
       buffs: Vec::new(),
       hostility: Hostility::Friendly,
@@ -189,7 +194,7 @@ impl EntityData {
   
   pub fn with_health(mut self, health: f32) -> EntityData {
     self.health = health;
-    self.initial_health = health;
+    self.max_health = health;
     self
   }
   
@@ -205,6 +210,11 @@ impl EntityData {
   
   pub fn with_ship_section(mut self, section: Box<ShipSection>) -> EntityData {
     self.ship_sections.push(section);
+    self
+  }
+  
+  pub fn with_health_regen(mut self, regen: f32) -> EntityData {
+    self.health_regen = regen;
     self
   }
 }
@@ -233,6 +243,10 @@ pub trait Entity: EntityClone {
   
   fn update(&mut self, delta_time: f32) -> (Vec<Box<Buff>>, Vec<Box<Projectile>>) {
     self.physics(delta_time);
+    self.mut_data().health += self.data().health_regen*delta_time;
+    if self.data().health >= self.data().max_health {
+      self.mut_data().health = self.data().max_health;
+    }
     
     (self.return_buffs(), self.return_projectiles())
   }
@@ -378,14 +392,18 @@ pub trait Entity: EntityClone {
   }
   
   fn draw_ship_ui(&self, draw_calls: &mut Vec<DrawCall>) {
+    if self.data().hostility.is_neutral() {
+      return;
+    }
+    
     let ship_size = self.data().size;
     
     let position = self.data().position + Vector2::new(0.0, ship_size.y*0.5);
-    let size = Vector2::new(40.0*(self.data().health / self.data().initial_health), 10.0);
+    let size = Vector2::new(40.0*(self.data().health / self.data().max_health), 10.0);
     let colour = Vector4::new(0.0, 1.0, 0.0, 0.5);
     draw_calls.push(DrawCall::draw_coloured(position, size, colour, 0.0));
     
-    let size = Vector2::new(40.0*(self.data().shield / self.data().initial_health), 15.0);
+    let size = Vector2::new(40.0*(self.data().shield / self.data().max_health), 15.0);
     let colour = Vector4::new(0.0, 0.0, 1.0, 0.5);
     draw_calls.push(DrawCall::draw_coloured(position, size, colour, 0.0));
   }

@@ -1,7 +1,7 @@
 use crate::modules::areas::{Area, AreaData};
-use crate::modules::entities::{FullEntity, Sun};
-use crate::modules::controllers::AbilitySpamAi;
-use crate::modules::abilities::{Ability, SingleShot, Shatter};
+use crate::modules::entities::{FullEntity, Sun, Astroid};
+use crate::modules::controllers::{IdleAi, AbilitySpamAi};
+use crate::modules::abilities::{Ability, SingleShot, Shatter, SunDamage};
 
 use crate::cgmath::Vector2;
 
@@ -12,17 +12,22 @@ pub struct SolarSystem {
 
 impl SolarSystem {
   pub fn new(position: Vector2<f32>, size: Vector2<f32>) -> SolarSystem {
-    let mut singleshot = Box::new(SingleShot::new());
-    singleshot.add_passive(Box::new(Shatter::new()));
     let sun = FullEntity { 
-          ai: Box::new(AbilitySpamAi::new().with_ability(singleshot)), 
+          ai: Box::new(IdleAi::new().with_ability(Box::new(SunDamage::new()))), 
           entity: Box::new(Sun::new(Vector2::new(840.0, 1500.0)).as_neutral()),
+          buffs: Vec::new(),
+    };
+    
+    let astroid = FullEntity { 
+          ai: Box::new(AbilitySpamAi::new()), 
+          entity: Box::new(Astroid::new(Vector2::new(-500.0, -1500.0), Vector2::new(100.0, 100.0)).as_hostile()),
           buffs: Vec::new(),
     };
     
     SolarSystem {
       data: AreaData::new(position, size)
-                      .with_entity(sun),
+                      .with_entity(sun)
+                      .with_entity(astroid),
     }
   }
 }

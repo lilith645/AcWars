@@ -1,14 +1,15 @@
-pub use singleshot::SingleShot;
-pub use doubleshot::DoubleShot;
-pub use movement::Move;
-pub use laser::Laser;
-pub use shatter::Shatter;
-pub use shield::Shield;
-pub use dash::Dash;
-pub use haste::Haste;
-pub use no_ability::NoAbility;
+pub use self::singleshot::SingleShot;
+pub use self::doubleshot::DoubleShot;
+pub use self::movement::Move;
+pub use self::laser::Laser;
+pub use self::shatter::Shatter;
+pub use self::shield::Shield;
+pub use self::dash::Dash;
+pub use self::haste::Haste;
+pub use self::sun_damage::SunDamage;
+pub use self::no_ability::NoAbility;
 
-pub use projectile_speed::ProjectileSpeed;
+pub use self::projectile_speed::ProjectileSpeed;
 
 // actives
 mod singleshot;
@@ -17,6 +18,7 @@ mod laser;
 mod shield;
 mod dash;
 mod haste;
+mod sun_damage;
 
 // passives
 mod projectile_speed;
