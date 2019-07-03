@@ -1,6 +1,6 @@
 use crate::modules::buffs::{Buff, BuffData};
 
-use crate::modules::entities::Entity;
+use crate::modules::entities::{Entity, BoxEntity};
 
 #[derive(Clone)]
 pub struct MaxSpeedBuff {
@@ -36,16 +36,16 @@ impl Buff for MaxSpeedBuff {
     &mut self.data
   }
   
-  fn reapply_buff(&self, entity: &mut Box<Entity>) {
+  fn reapply_buff(&self, entity: &mut BoxEntity) {
     
   }
   
-  fn apply_buff(&self, entity: &mut Box<Entity>) {
+  fn apply_buff(&self, entity: &mut BoxEntity) {
     let max_vel = entity.max_velocity();
     entity.set_max_velocty(max_vel * self.data().multiplier);
   }
   
-  fn unapply_buff(&self, entity: &mut Box<Entity>) {
+  fn unapply_buff(&self, entity: &mut BoxEntity) {
     let max_vel = entity.max_velocity();
     entity.set_max_velocty(max_vel / self.data().multiplier);
   }

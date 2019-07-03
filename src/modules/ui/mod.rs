@@ -12,9 +12,11 @@ use maat_gui::widgets::Widget;
 
 use crate::cgmath::Vector2;
 
+pub type BoxUi = Box<Ui>;
+
 pub struct UiData {
   widgets: Vec<Box<Widget>>,
-  uis: Option<Vec<Box<Ui>>>,
+  uis: Option<Vec<BoxUi>>,
   enabled: bool,
 }
 
@@ -37,7 +39,7 @@ impl UiData {
     self
   }
   
-  pub fn with_ui(mut self, new_ui: Box<Ui>) -> UiData {
+  pub fn with_ui(mut self, new_ui: BoxUi) -> UiData {
     if let Some(uis) = &mut self.uis {
       uis.push(new_ui);
     } else {

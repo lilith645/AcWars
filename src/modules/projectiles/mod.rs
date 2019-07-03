@@ -12,10 +12,15 @@ use maat_graphics::DrawCall;
 use maat_graphics::math;
 
 use crate::modules::Animation;
-use crate::modules::entities::{Entity, Hostility};
-use crate::modules::abilities::Ability;
+use crate::modules::entities::{Entity, BoxEntity, MutexEntity, Hostility};
+use crate::modules::abilities::{Ability, BoxAbility};
 
 use crate::cgmath::{Vector2, Vector3, Vector4};
+
+use std::sync::{Arc, Mutex};
+
+pub type MutexProjectile = Arc<Mutex<BoxProjectile>>;
+pub type BoxProjectile = Box<Projectile>;
 
 #[derive(Clone)]
 pub struct ProjectileData {
@@ -31,7 +36,7 @@ pub struct ProjectileData {
   hostility_locked: bool,
   lifetime_left: f32,
   should_exist: bool,
-  passives: Vec<Box<Ability>>,
+  passives: Vec<BoxAbility>,
 }
 
 impl ProjectileData {
@@ -137,6 +142,14 @@ pub trait Projectile: ProjectileClone {
   fn data(&self) -> &ProjectileData;
   fn mut_data(&mut self) -> &mut ProjectileData;
   
+  fn position(&self) -> Vector2<f32> {
+    self.data().position
+  }
+  
+  fn size(&self) -> Vector2<f32> {
+    self.data().size
+  }
+  
   // Vec2<offset>, radius
   fn collision_information(&self) -> Vec<(Vector2<f32>, f32)>;
   
@@ -198,7 +211,7 @@ pub trait Projectile: ProjectileClone {
     self.data().hostility.check_can_hit(hostility)
   }
   
-  fn add_passive(&mut self, passive: Box<Ability>) {
+  fn add_passive(&mut self, passive: BoxAbility) {
     self.mut_data().passives.push(passive);
   }
   
@@ -209,7 +222,7 @@ pub trait Projectile: ProjectileClone {
     }
   }
   
-  fn collide_with(&mut self, entity: &mut Box<Entity>) {
+  fn collide_with(&mut self, entity: &mut BoxEntity) {
     let entity_circles = entity.collision_circles();
     let projectile_circles = self.collision_circles();
     

@@ -14,13 +14,18 @@ use maat_graphics::DrawCall;
 use maat_graphics::math;
 
 use crate::modules::entities::sections::{ShipSection, RepairBay, HullMaterial};
-use crate::modules::projectiles::Projectile;
-use crate::modules::buffs::Buff;
-use crate::modules::controllers::EntityController;
+use crate::modules::projectiles::{Projectile, BoxProjectile};
+use crate::modules::buffs::{Buff, BoxBuff};
+use crate::modules::controllers::{EntityController, BoxEntityController};
 
 use std::f32::consts::PI;
 
 use crate::cgmath::{Vector2, Vector3, Vector4, InnerSpace};
+
+use std::sync::{Arc, Mutex};
+
+pub type MutexEntity = Arc<Mutex<BoxEntity>>;
+pub type BoxEntity = Box<Entity>;
 
 #[derive(Clone, PartialEq)]
 pub enum Hostility {
@@ -95,10 +100,26 @@ impl Hostility {
 
 #[derive(Clone)]
 pub struct FullEntity {
-  pub ai: Box<EntityController>,
-  pub entity: Box<Entity>,
-  pub buffs: Vec<Box<Buff>>
+  pub ai: BoxEntityController,
+  pub entity: MutexEntity,
+  pub buffs: Vec<BoxBuff>
 }
+
+impl FullEntity {
+  pub fn new(controller: Box<EntityController>, entity: BoxEntity) -> FullEntity { 
+    FullEntity {
+      ai: controller,
+      entity: Arc::new(Mutex::new(entity)),
+      buffs: Vec::new(),
+    }
+  }
+}
+
+unsafe impl Send for EntityData {
+}
+unsafe impl Sync for EntityData {
+}
+
 
 #[derive(Clone)]
 pub struct EntityData {
@@ -114,7 +135,7 @@ pub struct EntityData {
   health_regen: f32, // per second
   max_health: f32,
   shield: f32,
-  projectiles: Vec<Box<Projectile>>,
+  projectiles: Vec<BoxProjectile>,
   buffs: Vec<Box<Buff>>,
   hostility: Hostility,
   should_exist: bool,
@@ -223,7 +244,7 @@ pub trait EntityClone {
   fn clone_entity(&self) -> Box<Entity>;
 }
 
-impl<T: 'static + Entity + Clone> EntityClone for T {
+impl<T: 'static + Entity + Clone + Send + Sync> EntityClone for T {
   fn clone_entity(&self) -> Box<Entity> {
     Box::new(self.clone())
   }
@@ -242,7 +263,7 @@ pub trait Entity: EntityClone {
   fn collision_information(&self) -> Vec<(Vector2<f32>, f32)>;
   fn collide_with(&mut self, entity: &mut Box<Entity>);
    
-  fn update(&mut self, delta_time: f32) -> (Vec<Box<Buff>>, Vec<Box<Projectile>>) {
+  fn update(&mut self, delta_time: f32) -> (Vec<BoxBuff>, Vec<BoxProjectile>) {
     self.physics(delta_time);
     self.mut_data().health += self.data().health_regen*delta_time;
     if self.data().health >= self.data().max_health {
@@ -391,7 +412,7 @@ pub trait Entity: EntityClone {
     self.mut_data().acceleration = Vector2::new(0.0, 0.0);
   }
   
-  fn return_projectiles(&mut self) -> Vec<Box<Projectile>> {
+  fn return_projectiles(&mut self) -> Vec<BoxProjectile> {
     let projectiles = self.data().projectiles.clone();
     self.mut_data().projectiles.clear();
     

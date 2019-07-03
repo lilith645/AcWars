@@ -1,8 +1,8 @@
 use maat_graphics::math;
 
 use crate::modules::abilities::{Ability, AbilityData};
-use crate::modules::entities::{Entity, Hostility};
-use crate::modules::projectiles::{Projectile, LaserBeam};
+use crate::modules::entities::{Entity, BoxEntity, Hostility};
+use crate::modules::projectiles::{Projectile, BoxProjectile, LaserBeam};
 
 use crate::cgmath::{Vector2, InnerSpace};
 
@@ -28,11 +28,11 @@ impl Ability for Laser {
     &mut self.data
   }
   
-  fn apply_passive_effect(&self, projectile: &mut Box<Projectile>) {
+  fn apply_passive_effect(&self, projectile: &mut BoxProjectile) {
     
   }
   
-  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>, _parent_hostility: &Hostility) {
+  fn applied_to(&self, ship: &mut BoxEntity, target: Vector2<f32>, window_size: Vector2<f32>, _parent_hostility: &Hostility) {
     let ship_pos = ship.position();
     let ship_size = ship.size();
     

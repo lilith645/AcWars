@@ -1,23 +1,29 @@
 use maat_graphics::DrawCall;
 use maat_graphics::camera::OrthoCamera;
 use maat_graphics::imgui;
+use maat_graphics::ThreadPool;
 
 use maat_gui;
 
 use crate::modules::scenes::Scene;
 use crate::modules::scenes::SceneData;
 
-use crate::modules::buffs::Buff;
-use crate::modules::entities::{Entity, Ship, Brew};
-use crate::modules::projectiles::{Projectile};
+use crate::modules::buffs::{Buff, BoxBuff};
+use crate::modules::entities::{Entity, BoxEntity, MutexEntity, Ship, Brew};
+use crate::modules::projectiles::{Projectile, BoxProjectile, MutexProjectile};
 use crate::modules::controllers::{EntityController, AbilitySpamAi};
-use crate::modules::areas::{Area, SolarSystem, AstroidField};
+use crate::modules::areas::{Area, BoxArea, SolarSystem, AstroidField};
 use crate::modules::player;
-use crate::modules::ui::{Ui, PauseUi, AbilityUi};
+use crate::modules::ui::{Ui,BoxUi, PauseUi, AbilityUi};
 
 use crate::cgmath::{Vector2};
 
 use hlua::Lua;
+
+use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
+
+use crate::modules::spatial_hash::SpatialHash;
 
 enum UiIndex {
   PauseUi,
@@ -32,24 +38,33 @@ impl UiIndex {
 
 pub struct BattleScreen {
   data: SceneData,
-  areas: Vec<Box<Area>>,
+  areas: Vec<BoxArea>,
   input: player::Input,
-  ship: Box<Entity>,
-  buffs: Vec<Box<Buff>>,
-  projectiles: Vec<Box<Projectile>>,
+  ship: BoxEntity,
+  buffs: Vec<BoxBuff>,
+  projectiles: Vec<MutexProjectile>,
   zoom: f32,
   camera: OrthoCamera,
   ability_ui: AbilityUi,
-  uis: Vec<Box<Ui>>,
+  uis: Vec<BoxUi>,
   escape_pressed_last_frame: bool, 
+  spatial_hash: Arc<Mutex<SpatialHash>>,
+  pool: ThreadPool,
+  tx: mpsc::Sender<usize>,
+  rx: mpsc::Receiver<usize>,
+  thread_finished: bool,
 }
 
 impl BattleScreen {
   pub fn new(window_size: Vector2<f32>) -> BattleScreen {
+    let (tx, rx) = mpsc::channel();
+    
+    let solar_system: BoxArea = Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0)));
+    let astroid_field: BoxArea = Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(500.0, 1000.0)));
+    
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
-      areas: vec!(Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0))),
-                  Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(500.0, 1000.0)))),
+      areas: vec!(solar_system,astroid_field),
       input: player::Input::new(),
       ship: Box::new(Ship::new()),
       buffs: Vec::new(),
@@ -59,10 +74,16 @@ impl BattleScreen {
       ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
+      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(50.0))),
+      pool: ThreadPool::new(5),
+      tx,
+      rx,
+      thread_finished: false,
     }
   }
   
-  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<Box<Area>>, ship: Box<Entity>, buffs: Vec<Box<Buff>>, projectiles: Vec<Box<Projectile>>, zoom: f32) -> BattleScreen {
+  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: BoxEntity, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, zoom: f32) -> BattleScreen {
+    let (tx, rx) = mpsc::channel();
     
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()), 
@@ -76,7 +97,66 @@ impl BattleScreen {
       ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
+      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(50.0))),
+      pool: ThreadPool::new(5),
+      tx,
+      rx,
+      thread_finished: false,
     }
+  }
+  
+  pub fn new_collision_thread(&mut self, mutex_entity: Vec<MutexEntity>) {
+   /* self.thread_finished = false;
+    
+    let (mutex_all_entities, mutex_projectiles, mutex_spatial_hash, tx) = (mutex_entity.clone(), self.projectiles.clone(), self.spatial_hash.clone(), self.tx.clone());
+    
+    self.pool.execute(move || {
+      let mut spatial_hash = mutex_spatial_hash.lock().unwrap();
+      
+      for entity in mutex_all_entities {
+        spatial_hash.insert_object_for_point(Arc::clone(&entity));
+      }
+      
+      for i in 0..mutex_projectiles.len() {
+        let mut projectile = mutex_projectiles[i].lock().unwrap();
+        if projectile.should_exist() {
+          // player collision
+          if projectile.can_hit(self.ship.hostility()) {
+            if self.ship.should_exist() {
+              projectile.collide_with(&mut self.ship);
+            }
+          }
+          
+          // enemy collision 
+          let mut enemies = spatial_hash.retrieve_objects(&*projectile);
+          for enemy_mutex in &mut enemies {
+            if !projectile.should_exist() {
+              break;
+            }
+            
+            let mut enemy = enemy_mutex.lock().unwrap();
+            if projectile.can_hit(enemy.hostility()) {
+              if enemy.should_exist() {
+                projectile.collide_with(&mut *enemy);
+              }
+            }
+          }
+        }
+      }
+      
+      spatial_hash.clear();
+    
+      tx.send(1).unwrap();
+    });*/
+  }
+  
+  pub fn check_collision_thread(&mut self) {
+    /*match self.rx.try_recv() {
+      Ok(i) => {
+        self.thread_finished = true;
+      },
+      Err(_e) => { },
+    }*/
   }
 }
 
@@ -160,7 +240,7 @@ impl Scene for BattleScreen {
     
     // Projectiles
     for new_projectile in new_projectiles {
-      self.projectiles.push(new_projectile);
+      self.projectiles.push(Arc::new(Mutex::new(new_projectile)));
     }
     
     offset = 0;
@@ -169,14 +249,71 @@ impl Scene for BattleScreen {
         break;
       }
       
-      self.projectiles[i-offset].update(delta_time);
-      if !self.projectiles[i-offset].should_exist() {
+      let mut projectile_should_exist = true;
+      {
+        let mut projectile = self.projectiles[i-offset].lock().unwrap();
+        //self.projectiles[i-offset].update(delta_time);
+        projectile.update(delta_time);
+        projectile_should_exist = projectile.should_exist();
+      }
+      if !projectile_should_exist {
         self.projectiles.remove(i-offset);
         offset += 1;
       }
     }
     
     // Check collisions 
+    
+    // Spatial Collisions
+    
+    let mut all_entities: Vec<MutexEntity> = Vec::new();
+    for area in &mut self.areas {
+      for entity in &mut area.entities().into_iter() {
+        all_entities.push(Arc::clone(&entity));
+      }
+    }
+    /*
+    self.check_collision_thread();
+    if self.thread_finished {
+      self.new_collision_thread(all_entities);
+    }*/
+    
+    let mut spatial_hash = self.spatial_hash.lock().unwrap();
+    for entity in all_entities {
+      spatial_hash.insert_object_for_point(Arc::clone(&entity));
+    }
+    
+    for i in 0..self.projectiles.len() {
+      let mut projectile = self.projectiles[i].lock().unwrap();
+      if projectile.should_exist() {
+        // player collision
+        if projectile.can_hit(self.ship.hostility()) {
+          if self.ship.should_exist() {
+            projectile.collide_with(&mut self.ship);
+          }
+        }
+        
+        // enemy collision 
+        let mut enemies = spatial_hash.retrieve_objects(&*projectile);
+        for enemy_mutex in &mut enemies {
+          if !projectile.should_exist() {
+            break;
+          }
+          
+          let mut enemy = enemy_mutex.lock().unwrap();
+          if projectile.can_hit(enemy.hostility()) {
+            if enemy.should_exist() {
+              projectile.collide_with(&mut *enemy);
+            }
+          }
+        }
+      }
+    }
+    
+    spatial_hash.clear();
+    
+    
+    /*
     for i in 0..self.projectiles.len() {
       if self.projectiles[i].should_exist() {
         for area in &mut self.areas {
@@ -192,7 +329,7 @@ impl Scene for BattleScreen {
     
     for area in &mut self.areas {
       area.internal_collisions(&mut self.ship);
-    }
+    }*/
     
     self.ability_ui.update(dim);
     
@@ -222,7 +359,8 @@ impl Scene for BattleScreen {
       }
     }
     
-    for projectile in &self.projectiles {
+    for mutex_projectile in &self.projectiles {
+      let mut projectile = mutex_projectile.lock().unwrap();
       projectile.draw(draw_calls);
     }
     

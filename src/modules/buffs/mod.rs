@@ -4,7 +4,9 @@ pub use self::speed_buff::SpeedBuff;
 mod max_speed_buff;
 mod speed_buff;
 
-use crate::modules::entities::Entity;
+use crate::modules::entities::{Entity, BoxEntity};
+
+pub type BoxBuff = Box<Buff>;
 
 #[derive(Clone)]
 pub struct BuffData {
@@ -53,16 +55,16 @@ pub trait Buff: BuffClone {
   fn data(&self) -> &BuffData;
   fn mut_data(&mut self) -> &mut BuffData;
   
-  fn reapply_buff(&self, entity: &mut Box<Entity>);
+  fn reapply_buff(&self, entity: &mut BoxEntity);
   
-  fn apply_buff(&self, entity: &mut Box<Entity>);
-  fn unapply_buff(&self, entity: &mut Box<Entity>);
+  fn apply_buff(&self, entity: &mut BoxEntity);
+  fn unapply_buff(&self, entity: &mut BoxEntity);
   
   fn should_exist(&self) -> bool {
     self.data().should_exist
   }
   
-  fn update(&mut self, entity: &mut Box<Entity>, delta_time: f32) {
+  fn update(&mut self, entity: &mut BoxEntity, delta_time: f32) {
     self.mut_data().timer -= delta_time;
     if self.data().timer <= 0.0 {
       self.mut_data().should_exist = false;

@@ -30,10 +30,12 @@ mod no_ability;
 
 use maat_graphics::DrawCall;
 
-use crate::modules::entities::{Entity, Hostility};
-use crate::modules::projectiles::Projectile;
+use crate::modules::entities::{Entity, BoxEntity, Hostility};
+use crate::modules::projectiles::{Projectile, BoxProjectile};
 
 use crate::cgmath::{Vector2, Vector4};
+
+pub type BoxAbility = Box<Ability>;
 
 #[derive(Clone, PartialEq)]
 pub enum AbilityType {
@@ -49,6 +51,12 @@ pub struct AbilityData {
   time_left: f32,
   passives: Vec<Box<Ability>>,
 }
+
+unsafe impl Send for AbilityData {
+}
+unsafe impl Sync for AbilityData {
+}
+
 
 impl AbilityData {
   pub fn new_active(texture: String, timer: f32) -> AbilityData {
@@ -103,7 +111,7 @@ pub trait Ability: AbilityClone {
     &self.data().ability_type
   }
   
-  fn apply_passive_abilities(&self, mut projectile: &mut Box<Projectile>) {
+  fn apply_passive_abilities(&self, mut projectile: &mut BoxProjectile) {
     for passive in &self.data().passives {
       passive.apply_passive_effect(&mut projectile);
     }
@@ -115,7 +123,7 @@ pub trait Ability: AbilityClone {
     }
   }
   
-  fn activate(&mut self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>, parent_hostility: &Hostility) {
+  fn activate(&mut self, ship: &mut BoxEntity, target: Vector2<f32>, window_size: Vector2<f32>, parent_hostility: &Hostility) {
     if self.can_activate() {
       self.applied_to(ship, target, window_size, parent_hostility);
       self.mut_data().time_left = self.data().timer;
@@ -126,8 +134,8 @@ pub trait Ability: AbilityClone {
     (self.data().ability_type == AbilityType::Active) && (self.data().time_left <= 0.0)
   }
   
-  fn applied_to(&self, ship: &mut Box<Entity>, target: Vector2<f32>, window_size: Vector2<f32>, parent_hostility: &Hostility);
-  fn apply_passive_effect(&self, projectile: &mut Box<Projectile>);
+  fn applied_to(&self, ship: &mut BoxEntity, target: Vector2<f32>, window_size: Vector2<f32>, parent_hostility: &Hostility);
+  fn apply_passive_effect(&self, projectile: &mut BoxProjectile);
   
   fn draw(&self, position: Vector2<f32>, draw_calls: &mut Vec<DrawCall>) {
     draw_calls.push(DrawCall::draw_textured(position, Vector2::new(50.0, 50.0), 0.0, self.data().texture.to_string()));

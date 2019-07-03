@@ -9,4 +9,5 @@ pub mod entities;
 pub mod buffs;
 pub mod ui;
 pub mod areas;
+pub mod spatial_hash;
 mod animation;

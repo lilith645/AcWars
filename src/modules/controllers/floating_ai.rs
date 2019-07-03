@@ -1,8 +1,8 @@
 use maat_graphics::math;
 
-use crate::modules::entities::Entity;
+use crate::modules::entities::{Entity, BoxEntity};
 use crate::modules::controllers::{EntityController, EntityControllerData};
-use crate::modules::abilities::Ability;
+use crate::modules::abilities::{Ability, BoxAbility};
 
 use crate::cgmath::{Vector2, InnerSpace};
 
@@ -22,7 +22,7 @@ impl FloatingAi {
     }
   }
   
-  pub fn with_ability(mut self, ability: Box<Ability>) -> FloatingAi {
+  pub fn with_ability(mut self, ability: BoxAbility) -> FloatingAi {
     self.data = self.data.with_ability(ability);
     self
   }
@@ -37,7 +37,7 @@ impl EntityController for FloatingAi {
     &mut self.data
   }
   
-  fn update(&mut self, ship: &mut Box<Entity>, target: Vector2<f32>, area_pos: Vector2<f32>, area_size: Vector2<f32>, window_size: Vector2<f32>, delta_time: f32) {
+  fn update(&mut self, ship: &mut BoxEntity, target: Vector2<f32>, area_pos: Vector2<f32>, area_size: Vector2<f32>, window_size: Vector2<f32>, delta_time: f32) {
     let position = ship.position();
     
     if (position - area_pos).magnitude() > (area_size*0.5).magnitude() {

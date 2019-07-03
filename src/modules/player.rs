@@ -1,7 +1,7 @@
 use maat_graphics::DrawCall;
 
-use crate::modules::entities::Entity;
-use crate::modules::abilities::{Ability, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed, 
+use crate::modules::entities::{Entity, BoxEntity};
+use crate::modules::abilities::{Ability, BoxAbility, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed, 
                                 Shatter, Shield, Dash};
 
 use crate::cgmath::{Vector2, InnerSpace};
@@ -17,10 +17,10 @@ pub enum AbilityPosition {
 }
 
 pub struct Input {
-  left_click_ability: Option<Box<Ability>>,
-  middle_click_ability: Option<Box<Ability>>,
-  right_click_ability: Option<Box<Ability>>,
-  ability_one: Option<Box<Ability>>,
+  left_click_ability: Option<BoxAbility>,
+  middle_click_ability: Option<BoxAbility>,
+  right_click_ability: Option<BoxAbility>,
+  ability_one: Option<BoxAbility>,
 }
 
 impl Input {
@@ -39,7 +39,7 @@ impl Input {
     input
   }
   
-  pub fn update(&mut self, ship: &mut Box<Entity>, left_stick_position: Vector2<f32>, a_button_pressed: bool, right_trigger_pressed: bool, mouse_pos: Vector2<f32>, left_mouse: bool, middle_mouse: bool, right_mouse: bool, q_pressed: bool, window_size: Vector2<f32>, delta_time: f32) {
+  pub fn update(&mut self, ship: &mut BoxEntity, left_stick_position: Vector2<f32>, a_button_pressed: bool, right_trigger_pressed: bool, mouse_pos: Vector2<f32>, left_mouse: bool, middle_mouse: bool, right_mouse: bool, q_pressed: bool, window_size: Vector2<f32>, delta_time: f32) {
     let mut target = mouse_pos;
     let ship_offset = ship.position()-window_size*0.5;
     target += ship_offset;
@@ -88,9 +88,9 @@ impl Input {
     ship.set_facing(target);
   }
   
-  pub fn return_abilities(&self) -> (Option<Box<Ability>>, Option<Box<Ability>>, Option<Box<Ability>>, 
-                                     Option<Box<Ability>>, Option<Box<Ability>>, Option<Box<Ability>>, 
-                                     Option<Box<Ability>>) {
+  pub fn return_abilities(&self) -> (Option<BoxAbility>, Option<BoxAbility>, Option<BoxAbility>, 
+                                     Option<BoxAbility>, Option<BoxAbility>, Option<BoxAbility>, 
+                                     Option<BoxAbility>) {
     (self.left_click_ability.clone(), self.middle_click_ability.clone(), self.right_click_ability.clone(), 
      self.ability_one.clone(), None, None, None)
   }

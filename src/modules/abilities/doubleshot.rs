@@ -1,8 +1,8 @@
 use maat_graphics::math;
 
 use crate::modules::abilities::{Ability, AbilityData};
-use crate::modules::entities::{Entity, Hostility};
-use crate::modules::projectiles::{Projectile, Ftpl};
+use crate::modules::entities::{Entity, BoxEntity, Hostility};
+use crate::modules::projectiles::{Projectile, BoxProjectile, Ftpl};
 
 use crate::cgmath::{Vector2, InnerSpace};
 
@@ -28,11 +28,11 @@ impl Ability for DoubleShot {
     &mut self.data
   }
   
-  fn apply_passive_effect(&self, projectile: &mut Box<Projectile>) {
+  fn apply_passive_effect(&self, projectile: &mut BoxProjectile) {
     
   }
   
-  fn applied_to(&self, ship: &mut Box<Entity>, mut target: Vector2<f32>, window_size: Vector2<f32>, _parent_hostility: &Hostility) {
+  fn applied_to(&self, ship: &mut BoxEntity, mut target: Vector2<f32>, window_size: Vector2<f32>, _parent_hostility: &Hostility) {
     let ship_pos = ship.position();
     let ship_size = ship.size();
     
@@ -41,8 +41,8 @@ impl Ability for DoubleShot {
     let left_normal = Vector2::new(-proj_dir.y, proj_dir.x);
     let right_normal = Vector2::new(proj_dir.y, -proj_dir.x);
     
-    let mut projectile0: Box<Projectile> = Box::new(Ftpl::new(ship_pos+left_normal*25.0, ship_size*0.5, proj_dir));
-    let mut projectile1: Box<Projectile> = Box::new(Ftpl::new(ship_pos+right_normal*25.0, ship_size*0.5, proj_dir));
+    let mut projectile0: BoxProjectile = Box::new(Ftpl::new(ship_pos+left_normal*25.0, ship_size*0.5, proj_dir));
+    let mut projectile1: BoxProjectile = Box::new(Ftpl::new(ship_pos+right_normal*25.0, ship_size*0.5, proj_dir));
     
     self.apply_passive_abilities(&mut projectile0);
     self.apply_passive_abilities(&mut projectile1);

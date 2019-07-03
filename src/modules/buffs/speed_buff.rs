@@ -2,7 +2,7 @@ use maat_graphics::math;
 
 use crate::modules::buffs::{Buff, BuffData};
 
-use crate::modules::entities::Entity;
+use crate::modules::entities::{Entity, BoxEntity};
 
 use crate::cgmath::{Vector2, InnerSpace};
 
@@ -33,11 +33,11 @@ impl Buff for SpeedBuff {
     &mut self.data
   }
   
-  fn reapply_buff(&self, entity: &mut Box<Entity>) {
+  fn reapply_buff(&self, entity: &mut BoxEntity) {
     
   }
   
-  fn apply_buff(&self, entity: &mut Box<Entity>) {
+  fn apply_buff(&self, entity: &mut BoxEntity) {
     let rotation = math::to_radians(entity.rotation());
     let max_vel = entity.max_velocity();
     
@@ -46,7 +46,7 @@ impl Buff for SpeedBuff {
     entity.set_velocity(dir*max_vel);
   }
   
-  fn unapply_buff(&self, entity: &mut Box<Entity>) {
+  fn unapply_buff(&self, entity: &mut BoxEntity) {
     let dir = math::normalise_vector2(entity.velocity());
     let max_vel = entity.max_velocity();
     entity.set_velocity(dir*max_vel);
