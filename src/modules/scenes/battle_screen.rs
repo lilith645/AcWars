@@ -190,6 +190,10 @@ impl Scene for BattleScreen {
       }
     }
     
+    for area in &mut self.areas {
+      area.internal_collisions(&mut self.ship);
+    }
+    
     self.ability_ui.update(dim);
     
     self.camera.window_resized(dim.x, dim.y);

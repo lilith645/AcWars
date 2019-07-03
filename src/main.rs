@@ -96,11 +96,11 @@ fn main() {
   
   let mut draw_calls: Vec<DrawCall> = Vec::with_capacity(100);
   
-  let mut delta_time;
+  let mut delta_time = 0.0 ;
   let mut last_time = time::Instant::now();
   
   let mut done = false;
-  let mut dimensions;
+  let mut dimensions = Vector2::new(0.0, 0.0);
   
   let mut frame_counter = 0;
   let mut fps_timer = 0.0;

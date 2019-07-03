@@ -169,8 +169,7 @@ pub trait Scene {
   
   fn handle_input(&mut self, event: &winit::WindowEvent) -> bool {
     self.mut_data().released_this_render.clear();
-
-
+    
     if self.data().left_mouse {
       self.mut_data().left_mouse_dragged = true;
     }

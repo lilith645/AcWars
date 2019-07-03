@@ -240,7 +240,8 @@ pub trait Entity: EntityClone {
   fn mut_data(&mut self) -> &mut EntityData;
   
   fn collision_information(&self) -> Vec<(Vector2<f32>, f32)>;
-  
+  fn collide_with(&mut self, entity: &mut Box<Entity>);
+   
   fn update(&mut self, delta_time: f32) -> (Vec<Box<Buff>>, Vec<Box<Projectile>>) {
     self.physics(delta_time);
     self.mut_data().health += self.data().health_regen*delta_time;
@@ -249,6 +250,10 @@ pub trait Entity: EntityClone {
     }
     
     (self.return_buffs(), self.return_projectiles())
+  }
+  
+  fn texture(&self) -> String {
+    self.data().texture.to_string()
   }
   
   fn position(&self) -> Vector2<f32> {
@@ -341,6 +346,15 @@ pub trait Entity: EntityClone {
   fn set_velocity_magnitude(&mut self, vel: f32) {
     let vel_dir = math::normalise_vector2(self.data().velocity);
     self.mut_data().velocity = vel_dir*vel;
+  }
+  
+  fn set_acceleration_magnitude(&mut self, acc: f32) {
+    let acc_dir = math::normalise_vector2(self.data().acceleration);
+    self.mut_data().velocity = acc_dir*acc;
+  }
+  
+  fn add_acceleration(&mut self, acc: Vector2<f32>) {
+    self.mut_data().acceleration += acc;
   }
   
   fn apply_acceleration_in_direction(&mut self, direction: Vector2<f32>) {

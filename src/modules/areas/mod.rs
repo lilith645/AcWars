@@ -90,6 +90,20 @@ pub trait Area: AreaClone {
     }
   }
   
+  fn internal_collisions(&mut self, ship: &mut Box<Entity>) {
+    for i in 0..self.data().entities.len() {
+      for j in 0..self.data().entities.len() {
+        let mut entity = self.mut_data().entities[j].entity.clone();
+        self.mut_data().entities[i].entity.collide_with(&mut entity);
+        self.mut_data().entities[j].entity = entity;
+      }
+    }
+    
+    for i in 0..self.data().entities.len() {
+      self.mut_data().entities[i].entity.collide_with(ship);
+    }
+  }
+  
   fn update(&mut self, ship: &mut Box<Entity>, window_size: Vector2<f32>, delta_time: f32) -> Vec<Box<Projectile>> {
     self.update_area(delta_time);
     

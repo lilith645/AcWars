@@ -49,4 +49,8 @@ impl Entity for Sun {
     
     vec!((Vector2::new(0.0, 0.0), radius))
   }
+  
+  fn collide_with(&mut self, entity: &mut Box<Entity>) {
+    
+  }
 }
