@@ -12,8 +12,7 @@ pub struct Brew {
 }
 
 impl Brew {
-  pub fn new() -> Brew {
-     let position = Vector2::new(640.0, 1500.0);
+  pub fn new(position: Vector2<f32>) -> Brew {
      let size = Vector2::new(70.0, 70.0);
      let texture = "Brew".to_string();
      
@@ -32,6 +31,11 @@ impl Brew {
   
   pub fn with_position(mut self, position: Vector2<f32>) -> Brew {
     self.data.position = position;
+    self
+  }
+  
+  pub fn with_health(mut self, health: f32) -> Brew {
+    self.data = self.data.with_health(health);
     self
   }
   

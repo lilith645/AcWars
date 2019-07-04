@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 extern crate maat_graphics;
 extern crate maat_input_handler;
 extern crate maat_gui;
@@ -119,6 +121,7 @@ fn main() {
       last_fps = frame_counter as f64 * (1.0/fps_timer);
       fps_timer = 0.0;
       frame_counter = 0;
+      game.set_fps_last_frame(last_fps);
     }
     
     dimensions = graphics.get_virtual_dimensions();

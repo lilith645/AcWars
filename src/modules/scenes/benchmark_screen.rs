@@ -1,4 +1,4 @@
-use maat_graphics::DrawCall;
+use maat_graphics::{DrawCall, math};
 use maat_graphics::camera::OrthoCamera;
 use maat_graphics::imgui;
 use maat_graphics::ThreadPool;
@@ -12,11 +12,11 @@ use crate::modules::buffs::{Buff, BoxBuff};
 use crate::modules::entities::{Entity, BoxEntity, MutexEntity, Ship, Brew};
 use crate::modules::projectiles::{Projectile, BoxProjectile, MutexProjectile};
 use crate::modules::controllers::{EntityController, AbilitySpamAi};
-use crate::modules::areas::{Area, BoxArea, SolarSystem, AstroidField};
+use crate::modules::areas::{Area, BoxArea, BenchmarkArea};
 use crate::modules::player;
 use crate::modules::ui::{Ui,BoxUi, PauseUi, AbilityUi};
 
-use crate::cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2, Vector4, InnerSpace};
 
 use hlua::Lua;
 
@@ -37,7 +37,7 @@ impl UiIndex {
   }
 }
 
-pub struct BattleScreen {
+pub struct BenchmarkScreen {
   data: SceneData,
   areas: Vec<BoxArea>,
   input: player::Input,
@@ -50,26 +50,23 @@ pub struct BattleScreen {
   uis: Vec<BoxUi>,
   escape_pressed_last_frame: bool, 
   spatial_hash: Arc<Mutex<SpatialHash>>,
-  pool: ThreadPool,
-  tx: mpsc::Sender<usize>,
-  rx: mpsc::Receiver<usize>,
-  thread_finished: bool,
   collision_checks: u64,
   kdtree: Option<Box<Node>>,
+  total_delta_time: f32,
+  virtual_input: Vec<f32>,
+  all_fps: Vec<f64>,
+  mouse_angle: f32,
 }
 
-impl BattleScreen {
-  pub fn new(window_size: Vector2<f32>) -> BattleScreen {
-    let (tx, rx) = mpsc::channel();
+impl BenchmarkScreen {
+  pub fn new(window_size: Vector2<f32>) -> BenchmarkScreen {
+    let benchmark: BoxArea = Box::new(BenchmarkArea::new(Vector2::new(0.0, 0.0), Vector2::new(2000.0, 2000.0), 10));
     
-    let solar_system: BoxArea = Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0)));
-    let astroid_field: BoxArea = Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(500.0, 1000.0)));
-    
-    BattleScreen {
+    BenchmarkScreen {
       data: SceneData::new(window_size, Vec::new()),
-      areas: vec!(solar_system,astroid_field),
+      areas: vec!(benchmark),
       input: player::Input::new(),
-      ship: Box::new(Ship::new(Vector2::new(540.0, 600.0))),
+      ship: Box::new(Ship::new(Vector2::new(0.0, 0.0))),
       buffs: Vec::new(),
       projectiles: Vec::new(),
       zoom: 0.75,
@@ -77,20 +74,19 @@ impl BattleScreen {
       ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
-      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(50.0))),
-      pool: ThreadPool::new(5),
-      tx,
-      rx,
-      thread_finished: false,
+      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
       collision_checks: 0,
       kdtree: None,
+      total_delta_time: 0.0,
+      virtual_input: (0..100).into_iter().map(|x| x as f32*0.5).collect::<Vec<f32>>(),
+      all_fps: Vec::new(),
+      mouse_angle: 0.0,
     }
   }
   
-  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: BoxEntity, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, zoom: f32) -> BattleScreen {
-    let (tx, rx) = mpsc::channel();
+  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: BoxEntity, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, zoom: f32, all_fps: Vec<f64>, mouse_angle: f32) -> BenchmarkScreen {
     
-    BattleScreen {
+    BenchmarkScreen {
       data: SceneData::new(window_size, Vec::new()), 
       areas,
       input: player::Input::new(),
@@ -102,13 +98,13 @@ impl BattleScreen {
       ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
-      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(50.0))),
-      pool: ThreadPool::new(5),
-      tx,
-      rx,
-      thread_finished: false,
+      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
       collision_checks: 0,
       kdtree: None,
+      total_delta_time: 0.0,
+      virtual_input: (0..100).into_iter().map(|x| x as f32*0.5).collect::<Vec<f32>>(),
+      all_fps,
+      mouse_angle,
     }
   }
   
@@ -234,63 +230,9 @@ impl BattleScreen {
       }
     }
   }
-  
-  pub fn new_collision_thread(&mut self, mutex_entity: Vec<MutexEntity>) {
-   /* self.thread_finished = false;
-    
-    let (mutex_all_entities, mutex_projectiles, mutex_spatial_hash, tx) = (mutex_entity.clone(), self.projectiles.clone(), self.spatial_hash.clone(), self.tx.clone());
-    
-    self.pool.execute(move || {
-      let mut spatial_hash = mutex_spatial_hash.lock().unwrap();
-      
-      for entity in mutex_all_entities {
-        spatial_hash.insert_object_for_point(Arc::clone(&entity));
-      }
-      
-      for i in 0..mutex_projectiles.len() {
-        let mut projectile = mutex_projectiles[i].lock().unwrap();
-        if projectile.should_exist() {
-          // player collision
-          if projectile.can_hit(self.ship.hostility()) {
-            if self.ship.should_exist() {
-              projectile.collide_with(&mut self.ship);
-            }
-          }
-          
-          // enemy collision 
-          let mut enemies = spatial_hash.retrieve_objects(&*projectile);
-          for enemy_mutex in &mut enemies {
-            if !projectile.should_exist() {
-              break;
-            }
-            
-            let mut enemy = enemy_mutex.lock().unwrap();
-            if projectile.can_hit(enemy.hostility()) {
-              if enemy.should_exist() {
-                projectile.collide_with(&mut *enemy);
-              }
-            }
-          }
-        }
-      }
-      
-      spatial_hash.clear();
-    
-      tx.send(1).unwrap();
-    });*/
-  }
-  
-  pub fn check_collision_thread(&mut self) {
-    /*match self.rx.try_recv() {
-      Ok(i) => {
-        self.thread_finished = true;
-      },
-      Err(_e) => { },
-    }*/
-  }
 }
 
-impl Scene for BattleScreen {
+impl Scene for BenchmarkScreen {
   fn data(&self) -> &SceneData {
     &self.data
   }
@@ -300,20 +242,64 @@ impl Scene for BattleScreen {
   }
   
   fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
-    Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.buffs.clone(), self.projectiles.clone(), self.zoom))
+    Box::new(BenchmarkScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.buffs.clone(), self.projectiles.clone(), self.zoom, self.all_fps.clone(), self.mouse_angle))
   }
   
   fn update(&mut self, _ui: Option<&imgui::Ui>, _lua: Option<&mut Lua>, delta_time: f32) {
     self.mut_data().controller.update();
     
     let dim = self.data().window_dim;
-    let mouse_pos = self.data.mouse_pos;
+    let mut mouse_pos = self.data.mouse_pos;
     
-    let left_mouse = self.data.left_mouse;
+    self.total_delta_time += delta_time;
+    
+    let mut step_number = 0;
+    for i in 0..self.virtual_input.len() {
+      if self.total_delta_time > self.virtual_input[i] {
+        step_number += 1;
+      }
+    }
+    
+    if step_number <= 50 {
+      self.all_fps.push(self.data().fps_last_frame);
+      self.all_fps.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    }
+    
+    let mut left_mouse = self.data.left_mouse;
     let middle_mouse = self.data.middle_mouse;
-    let right_mouse = self.data.right_mouse;
-    let q_pressed = self.data.keys.q_pressed();
+    let mut right_mouse = self.data.right_mouse;
+    let mut q_pressed = self.data.keys.q_pressed();
     let escape_pressed = self.data.keys.escape_pressed() && !self.escape_pressed_last_frame;
+    
+    self.mouse_angle += 60.0*delta_time;
+    
+    match step_number {
+      //shoot
+      0..=3 | 37 |  8 | 9 | 31 | 39 | 10 | 11 | 33 | 12 | 13 | 35 | 32 | 38 | 34 | 36 => {
+        mouse_pos = dim*0.5+Vector2::new(100.0*(math::to_radians(self.mouse_angle)).cos(), 
+                                         100.0*(math::to_radians(self.mouse_angle)).sin());
+        right_mouse = true;
+      },
+      // dash
+      40 => {
+        mouse_pos = dim*0.5+Vector2::new(-10.0, 50.0);
+        q_pressed = true;
+      },
+      // reverse dash
+      50 => {
+        mouse_pos = dim*0.5+Vector2::new(10.0, -50.0);
+        q_pressed = true;
+      },
+      // idle
+      4..=7 | 13..=30 | 
+      42..=49 => {
+          mouse_pos = dim*0.5+Vector2::new(100.0*(math::to_radians(self.mouse_angle)).cos(), 
+                                         100.0*(math::to_radians(self.mouse_angle)).sin());
+          right_mouse = false;
+          left_mouse = false;
+      },
+      _ => {},
+    }
     
     // Key presses
     if escape_pressed {
@@ -339,9 +325,9 @@ impl Scene for BattleScreen {
     }
     
     // Player
-    let left_stick_position =  self.data().controller.left_stick_position();
-    let xbox_a_button = self.data().controller.a_button_pressed();
-    let right_trigger_pressed = self.data().controller.right_trigger_pressed();
+    let left_stick_position = Vector2::new(0.0, 0.0);
+    let xbox_a_button = false;
+    let right_trigger_pressed = false;
     self.input.update(&mut self.ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
     
     let (mut buffs, mut new_projectiles) = self.ship.update(delta_time);
@@ -399,29 +385,29 @@ impl Scene for BattleScreen {
     let mut all_far_entities: Vec<MutexEntity> = Vec::new();
     for area in &mut self.areas {
       for mutex_entity in &mut area.entities().into_iter() {
-        let distance = {
+        /*let distance = {
           let entity = mutex_entity.lock().unwrap();
           
           let mut ship_pos = self.ship.position();
           let mut entity_pos = entity.position();
           
           (ship_pos-entity_pos).magnitude()
-        };
-        
-        if distance < 540.0 {
+        };*/
+        all_close_entities.push(Arc::clone(&mutex_entity));
+       /* if distance < 540.0 {
           all_close_entities.push(Arc::clone(&mutex_entity));
         } else {
           all_far_entities.push(Arc::clone(&mutex_entity));
-        }
+        }*/
       }
     }
     
     let total_collision_checks = self.collision_checks;
-    println!("Collisions: {}", self.collision_checks);
+    //println!("Collisions: {}", self.collision_checks);
     self.collision_checks = 0;
-    self.brute_force_collision(all_far_entities);
-    self.kdtree_collision(all_close_entities);
-    //self.spatial_hash_collision(all_far_entities);
+    //self.brute_force_collision(all_close_entities);
+   // self.kdtree_collision(all_close_entities);
+    self.spatial_hash_collision(all_close_entities);
     
     self.ability_ui.update(dim);
     
@@ -476,15 +462,6 @@ impl Scene for BattleScreen {
     
     self.ship.draw_ship_ui(draw_calls);
     
-    /*
-    for projectile in &self.projectiles {
-      projectile.draw_collision_circles(draw_calls);
-    }
-    for area in &self.areas {
-      area.draw_collision_circles(draw_calls);
-    }
-    self.ship.draw_collision_circles(draw_calls);
-    */
     draw_calls.push(DrawCall::set_texture_scale(1.0));
     draw_calls.push(DrawCall::reset_ortho_camera());
     
@@ -494,21 +471,42 @@ impl Scene for BattleScreen {
     for ui in &self.uis {
       ui.draw(draw_calls);
     }
-    draw_calls.push(DrawCall::set_texture_scale(self.zoom));
     
-    draw_calls.push(DrawCall::replace_ortho_camera(self.camera.clone()));
-    let pos = self.ship.position();
-    /*
-      let min_width = 0.0;
-      let min_height = 0.0;
-      let max_width = 19200.0*0.5;
-      let max_height = 19200.0*0.5;
-      let colour = crate::cgmath::Vector4::new(1.0, 1.0, 1.0, 1.0);
-      draw_calls.push(DrawCall::draw_coloured(Vector2::new(max_width*0.5, max_height), Vector2::new(max_width, 10.0), colour, 0.0));
-      draw_calls.push(DrawCall::draw_coloured(Vector2::new(max_width*0.5, min_height), Vector2::new(max_width, 10.0), colour, 0.0));
-      
-      draw_calls.push(DrawCall::draw_coloured(Vector2::new(max_width, max_height*0.5), Vector2::new(10.0, max_height), colour, 0.0));
-      draw_calls.push(DrawCall::draw_coloured(Vector2::new(min_width, max_height*0.5), Vector2::new(10.0, max_height), colour, 0.0));
-      Node::draw_kdtree(self.kdtree.clone(), 0, draw_calls, max_height, max_width, max_height);*/
+    if self.total_delta_time > 25.0 {
+      let mut lowest_fps = {
+        let mut temp_low = 0.0;
+        let mut i = 0;
+        while temp_low == 0.0 {
+          if i >= self.all_fps.len() {
+            break;
+          }
+          temp_low = self.all_fps[i];
+          i+=1;
+        }
+        
+        temp_low.to_string()
+      };
+      let mut highest_fps = self.all_fps[self.all_fps.len()-1].to_string();
+      let mut median_index = (self.all_fps.len() as f32*0.5).floor() as usize;
+      let  mut fps = self.all_fps[median_index].to_string();
+      fps.truncate(6);
+      lowest_fps.truncate(6);
+      highest_fps.truncate(6);
+      draw_calls.push(DrawCall::draw_text_basic_centered(Vector2::new(width*0.5, height*0.5+50.0), 
+                                             Vector2::new(128.0, 128.0), 
+                                             Vector4::new(1.0, 1.0, 1.0, 1.0), 
+                                             "Lowest Benckmark fps: ".to_string() + &lowest_fps, 
+                                             "Arial".to_string()));
+      draw_calls.push(DrawCall::draw_text_basic_centered(Vector2::new(width*0.5, height*0.5), 
+                                             Vector2::new(128.0, 128.0), 
+                                             Vector4::new(1.0, 1.0, 1.0, 1.0), 
+                                             "Average Benckmark fps: ".to_string() + &fps, 
+                                             "Arial".to_string()));
+      draw_calls.push(DrawCall::draw_text_basic_centered(Vector2::new(width*0.5, height*0.5-50.0), 
+                                             Vector2::new(128.0, 128.0), 
+                                             Vector4::new(1.0, 1.0, 1.0, 1.0), 
+                                             "Highest Benckmark fps: ".to_string() + &highest_fps, 
+                                             "Arial".to_string()));
+  }
   }
 }

@@ -16,9 +16,11 @@ use crate::cgmath::{Vector2, Vector3};
 
 pub use self::load_screen::LoadScreen;
 pub use self::battle_screen::BattleScreen;
+pub use self::benchmark_screen::BenchmarkScreen;
 
 mod load_screen;
 mod battle_screen;
+mod benchmark_screen;
 
 pub struct ImGuiInfo {
   _wants_mouse: bool,
@@ -46,6 +48,7 @@ pub struct SceneData {
   _imgui_info: ImGuiInfo,
   models_to_load: Vec<(String, String)>,
   models_to_unload: Vec<String>,
+  fps_last_frame: f64,
 }
 
 impl SceneData {
@@ -71,6 +74,7 @@ impl SceneData {
       _imgui_info: ImGuiInfo { _wants_mouse: false, _wants_keyboard: false },
       models_to_load: Vec::new(),
       models_to_unload: Vec::new(),
+      fps_last_frame: 0.0,
     }
   }
   
@@ -96,6 +100,7 @@ impl SceneData {
       _imgui_info: ImGuiInfo { _wants_mouse: false, _wants_keyboard: false },
       models_to_load: Vec::new(),
       models_to_unload: Vec::new(),
+      fps_last_frame: 0.0,
     }
   }
   
@@ -122,6 +127,10 @@ pub trait Scene {
   
   fn scene_finished(&self) -> bool {
     self.data().next_scene
+  }
+  
+  fn set_fps_last_frame(&mut self, fps: f64) {
+    self.mut_data().fps_last_frame = fps;
   }
   
   fn reset_scroll_value(&mut self) {

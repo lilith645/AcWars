@@ -10,4 +10,5 @@ pub mod buffs;
 pub mod ui;
 pub mod areas;
 pub mod spatial_hash;
+pub mod kdtree;
 mod animation;

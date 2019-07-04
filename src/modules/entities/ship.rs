@@ -10,8 +10,7 @@ pub struct Ship {
 }
 
 impl Ship {
-  pub fn new() -> Ship {
-     let position = Vector2::new(640.0, 520.0);
+  pub fn new(position: Vector2<f32>) -> Ship {
      let size = Vector2::new(150.0, 150.0);
      let texture = "Bulbz".to_string();
      

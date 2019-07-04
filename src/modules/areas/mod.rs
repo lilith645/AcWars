@@ -1,8 +1,10 @@
 pub use self::solar_system::SolarSystem;
 pub use self::astroid_field::AstroidField;
+pub use self::benchmark::BenchmarkArea;
 
 mod solar_system;
 mod astroid_field;
+mod benchmark;
 
 use maat_graphics::DrawCall;
 use crate::modules::projectiles::{Projectile, BoxProjectile};
@@ -26,24 +28,10 @@ pub struct AreaData {
 
 impl AreaData {
   pub fn new(position: Vector2<f32>, size: Vector2<f32>) -> AreaData {
-    let e1_single_shot = Box::new(SingleShot::new());
-    let e1_haste = Box::new(Haste::new());
-    let mut e2_ability = Box::new(SingleShot::new());
-    let e3_ability = Box::new(SingleShot::new());
-    
-    e2_ability.add_passive(Box::new(ProjectileSpeed::new()));
-    
     AreaData {
       position,
       size,
-      entities: vec!(
-        FullEntity::new(Box::new(AbilitySpamAi::new().with_ability(e1_single_shot).with_ability(e1_haste)), 
-                        Box::new(Brew::new().as_hostile().with_position(position+Vector2::new(position.x-100.0, position.y)))),
-        FullEntity::new(Box::new(AbilitySpamAi::new().with_ability(e2_ability)), 
-                        Box::new(Brew::new().as_hostile().with_position(position+Vector2::new(position.x+300.0, position.y-300.0)))),
-        FullEntity::new(Box::new(AbilitySpamAi::new().with_ability(e3_ability.clone())), 
-                        Box::new(Brew::new().as_hostile().with_position(position+Vector2::new(position.x-840.0, position.y-1500.0)))),
-      ),
+      entities: Vec::new(),
     }
   }
   

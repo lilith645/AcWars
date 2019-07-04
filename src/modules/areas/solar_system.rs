@@ -1,7 +1,7 @@
 use crate::modules::areas::{Area, AreaData};
-use crate::modules::entities::{FullEntity, Sun, Astroid};
+use crate::modules::entities::{FullEntity, Sun, Astroid, Brew};
 use crate::modules::controllers::{IdleAi, AbilitySpamAi};
-use crate::modules::abilities::{Ability, SingleShot, Shatter, SunDamage};
+use crate::modules::abilities::{Ability, SingleShot, Shatter, SunDamage, Haste, ProjectileSpeed};
 
 use crate::cgmath::Vector2;
 
@@ -21,10 +21,25 @@ impl SolarSystem {
                                   Box::new(Astroid::new(Vector2::new(-500.0, -1500.0), 
                                                         Vector2::new(100.0, 100.0)).as_hostile()));
     
+    let e1_single_shot = Box::new(SingleShot::new());
+    let e1_haste = Box::new(Haste::new());
+    let mut e2_ability = Box::new(SingleShot::new());
+    let e3_ability = Box::new(SingleShot::new());
+    e2_ability.add_passive(Box::new(ProjectileSpeed::new()));
+    
+     let e1 =   FullEntity::new(Box::new(AbilitySpamAi::new().with_ability(e1_single_shot).with_ability(e1_haste)), 
+                        Box::new(Brew::new(position).as_hostile().with_position(position+Vector2::new(position.x-100.0, position.y))));
+     let e2 = FullEntity::new(Box::new(AbilitySpamAi::new().with_ability(e2_ability)), 
+                        Box::new(Brew::new(position).as_hostile().with_position(position+Vector2::new(position.x+300.0, position.y-300.0))));
+    let e3 = FullEntity::new(Box::new(AbilitySpamAi::new().with_ability(e3_ability.clone())), 
+                        Box::new(Brew::new(position).as_hostile().with_position(position+Vector2::new(position.x-840.0, position.y-1500.0))));
     SolarSystem {
       data: AreaData::new(position, size)
                       .with_entity(sun)
-                      .with_entity(astroid),
+                      .with_entity(astroid)
+                      .with_entity(e1)
+                      .with_entity(e2)
+                      .with_entity(e3),
     }
   }
 }

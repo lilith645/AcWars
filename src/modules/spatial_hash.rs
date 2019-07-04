@@ -28,7 +28,7 @@ struct ObjectContainer {
 impl ObjectContainer {
   pub fn new() -> ObjectContainer {
     ObjectContainer {
-      contents: Vec::new(),
+      contents: Vec::with_capacity(100000),
     }
   }
   
