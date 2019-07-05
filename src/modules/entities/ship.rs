@@ -32,6 +32,11 @@ impl Ship {
     self.data = self.data.as_hostile();
     self
   }
+  
+  pub fn with_health(mut self, health: f32) -> Ship {
+    self.data = self.data.with_health(health);
+    self
+  }
 }
 
 impl Entity for Ship {

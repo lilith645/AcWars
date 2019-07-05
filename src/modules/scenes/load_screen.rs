@@ -40,7 +40,7 @@ impl Scene for LoadScreen {
   }
   
   fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
-    Box::new(BenchmarkScreen::new(window_size))
+    Box::new(BattleScreen::new(window_size))
   }
   
   fn update(&mut self, _ui: Option<&Ui>, _lua: Option<&mut Lua>, delta_time: f32) {

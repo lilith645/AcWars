@@ -45,25 +45,25 @@ impl PauseUi {
     
     let button_width = pause_width*0.6;
     let button_height = 40.0;
-    let button_colour = Vector4::new(0.0, 0.0, 0.0, 1.0);
+    let button_colour = Vector4::new(0.8, 0.8, 0.8, 1.0);
     let font =  "Arial".to_string();
     let background = Box::new(Image::new(positions[WidgetIndex::Background.n()], Vector2::new(pause_width, pause_height))
-                                     .with_colour(Vector4::new(0.0, 0.0, 0.4, 1.0)));
+                                     .with_primary_colour(Vector4::new(0.2, 0.2, 0.3, 1.0)));
     
     let resume_position = positions[WidgetIndex::Resume.n()];
     let resume_text: Box<Widget> = Box::new(Text::new(resume_position, 64.0, &font, &"Resume".to_string()).center_text());
     let resume = Box::new(Button::new(resume_position, Vector2::new(button_width, button_height))
-                                     .with_colour(button_colour));
+                                     .with_primary_colour(button_colour));
     
     let options_position = positions[WidgetIndex::Options.n()];
     let options_text: Box<Widget> = Box::new(Text::new(options_position, 64.0, &font, &"Options".to_string()).center_text());
     let options = Box::new(Button::new(options_position, Vector2::new(button_width, button_height))
-                                     .with_colour(button_colour));
+                                     .with_primary_colour(button_colour));
                                      
     let quit_position = positions[WidgetIndex::Quit.n()];
     let quit_text: Box<Widget> = Box::new(Text::new(quit_position, 64.0, &font, &"Quit".to_string()).center_text());
     let quit = Box::new(Button::new(quit_position, Vector2::new(button_width, button_height))
-                                     .with_colour(button_colour));
+                                     .with_primary_colour(button_colour));
     
     let mut options_ui: Box<Ui> = Box::new(OptionsUi::new(window_size));
     options_ui.disable();

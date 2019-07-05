@@ -63,9 +63,9 @@ pub trait Area: AreaClone {
   
   fn update_area(&mut self, delta_time: f32);
   
-  fn entities(&mut self) -> Vec<MutexEntity> {
+  fn entities(&self) -> Vec<MutexEntity> {
     let mut arc_entities = Vec::new();
-    for full_entity in &mut self.mut_data().entities {
+    for full_entity in &self.data().entities {
       arc_entities.push(Arc::clone(&full_entity.entity))
     }
     

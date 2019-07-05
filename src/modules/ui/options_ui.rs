@@ -2,7 +2,7 @@ use maat_graphics::DrawCall;
 use maat_graphics::Settings;
 
 use crate::modules::ui::{Ui, UiData};
-use maat_gui::widgets::{Widget, Image, Text, Button, CheckBox};
+use maat_gui::widgets::{Widget, Image, Text, Button, CheckBox, DropdownBox};
 
 use crate::cgmath::{Vector2, Vector4};
 
@@ -20,6 +20,8 @@ enum WidgetIndex {
   VsyncText,
   Fullscreen,
   FullscreenText,
+  Msaa,
+  MsaaText,
   Save,
   SaveText,
   Return,
@@ -38,41 +40,79 @@ impl OptionsUi {
     let settings = Settings::load(iwindow_size, iwindow_size);
     let vsync_setting = settings.vsync_enabled();
     let fullscreen_setting = settings.is_fullscreen();
+    let msaa = settings.get_texture_msaa();
     
     let menu_width = window_size.x*0.8;
     let menu_height = window_size.y*0.8;
     
-    let button_colour = Vector4::new(0.0, 0.0, 0.0, 1.0);
+    let background_colour = Vector4::new(0.2, 0.2, 0.3, 1.0);
+    let button_colour = Vector4::new(0.8, 0.8, 0.8, 1.0);
+    let checked_box = Vector4::new(1.0, 0.0, 0.0, 1.0);
     let font =  "Arial".to_string();
     let positions = OptionsUi::realign_widget_positions(window_size, Vector2::new(menu_width, menu_height));
     
     
     let background = Box::new(Image::new(positions[WidgetIndex::Background.n()], Vector2::new(menu_width, menu_height))
-                                     .with_colour(Vector4::new(0.0, 0.0, 0.4, 1.0)));
+                                     .with_primary_colour(background_colour));
     
     let return_button_position = positions[WidgetIndex::Return.n()];
     let return_text_position = positions[WidgetIndex::ReturnText.n()];
     let return_text: Box<Widget> = Box::new(Text::new(return_text_position, 64.0, &font, &"Return".to_string()).center_text());
     let return_button = Box::new(Button::new(return_button_position, Vector2::new(BUTTON_WIDTH, BUTTON_HEIGHT))
-                                     .with_colour(button_colour));
+                                     .with_primary_colour(button_colour));
     
     let save_button_position = positions[WidgetIndex::Save.n()];
     let save_text_position = positions[WidgetIndex::SaveText.n()];
     let save_text: Box<Widget> = Box::new(Text::new(save_text_position, 64.0, &font, &"Save".to_string()).center_text());
     let save_button = Box::new(Button::new(save_button_position, Vector2::new(BUTTON_WIDTH, BUTTON_HEIGHT))
-                                     .with_colour(button_colour));
+                                     .with_primary_colour(button_colour));
     
     let vsync_checkbox_position = positions[WidgetIndex::Vsync.n()];
     let vsync_text_position = positions[WidgetIndex::VsyncText.n()];
     let mut vsync = Box::new(CheckBox::new(vsync_checkbox_position, Vector2::new(50.0, 50.0))
-                                  .with_colour(Vector4::new(0.0, 0.4, 0.0, 1.0)));
+                                       .with_primary_colour(checked_box)
+                                       .with_secondary_colour(button_colour));
     let vsync_text = Box::new(Text::new(vsync_text_position, 128.0, &font, &"Vsync".to_string()));
     
     let fullscreen_checkbox_position = positions[WidgetIndex::Fullscreen.n()];
     let fullscreen_text_position = positions[WidgetIndex::FullscreenText.n()];
     let mut fullscreen = Box::new(CheckBox::new(fullscreen_checkbox_position, Vector2::new(50.0, 50.0))
-                                  .with_colour(Vector4::new(0.0, 0.4, 0.0, 1.0)));
+                                  .with_primary_colour(checked_box)
+                                  .with_secondary_colour(button_colour));
     let fullscreen_text = Box::new(Text::new(fullscreen_text_position, 128.0, &font, &"Fullscreen".to_string()));
+    
+    let msaa_dropdown_position = positions[WidgetIndex::Msaa.n()];
+    let msaa_text_position = positions[WidgetIndex::MsaaText.n()];
+    
+    let msaa_index = match msaa {
+      2 => {
+        2
+      },
+      4 => {
+        3
+      },
+      8 => {
+        4
+      },
+      16 => {
+        5
+      },
+      _ => {
+        1
+      },
+    };
+    
+    let mut msaa = Box::new(DropdownBox::new(msaa_dropdown_position, Vector2::new(50.0, 50.0), "Arial".to_string())
+                                  /*.with_colour(Vector4::new(0.0, 0.4, 0.0, 1.0))*/
+                                  .add_option("x1".to_string())
+                                  .add_option("x2".to_string())
+                                  .add_option("x4".to_string())
+                                  .add_option("x8".to_string())
+                                  .add_option("x16".to_string())
+                                  .set_option(msaa_index)
+                                  .with_primary_colour(button_colour));
+    
+    let msaa_text = Box::new(Text::new(msaa_text_position, 128.0, &font, &"Msaa".to_string()));
     
     if vsync_setting {
       vsync.activate();
@@ -89,6 +129,8 @@ impl OptionsUi {
                     .with_widget(vsync_text)
                     .with_widget(fullscreen)
                     .with_widget(fullscreen_text)
+                    .with_widget(msaa)
+                    .with_widget(msaa_text)
                     .with_widget(save_button)
                     .with_widget(save_text)
                     .with_widget(return_button)
@@ -116,8 +158,11 @@ impl OptionsUi {
     let fullscreen_text = background_position + Vector2::new(-menu_size.x*0.5, menu_size.y*0.5) + Vector2::new(50.0, -200.0);
     let fullscreen = fullscreen_text + Vector2::new(200.0, 15.0);
     
+    let msaa_text = background_position + Vector2::new(-menu_size.x*0.5, menu_size.y*0.5) + Vector2::new(50.0, -300.0);
+    let msaa = msaa_text + Vector2::new(200.0, 15.0);
+    
     // Backgound pos, resume pos, resume text pos, options pos, options text pos, quit pos, quit text pos
-    vec!(background_position, vsync, vsync_text, fullscreen, fullscreen_text, save_position, save_text, return_position, return_text)
+    vec!(background_position, vsync, vsync_text, fullscreen, fullscreen_text, msaa, msaa_text, save_position, save_text, return_position, return_text)
   }
 }
 
@@ -148,6 +193,26 @@ impl Ui for OptionsUi {
     if self.data().widgets[WidgetIndex::Save.n()].pressed() {
       self.settings.set_vsync(self.data().widgets[WidgetIndex::Vsync.n()].activated());
       self.settings.enable_fullscreen(self.data().widgets[WidgetIndex::Fullscreen.n()].activated());
+      let msaa = {
+        match self.data().widgets[WidgetIndex::Msaa.n()].text().as_ref() {
+          "x2" => {
+            2
+          },
+          "x4" => {
+            4
+          },
+          "x8" => {
+            8
+          },
+          "x16" => {
+            16
+          },
+          _ => {
+            1
+          },
+        }
+      };
+      self.settings.set_texture_msaa(msaa);
       self.settings.save();
       println!("settings svaed");
     }
