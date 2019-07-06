@@ -135,6 +135,7 @@ pub struct EntityData {
   health_regen: f32, // per second
   max_health: f32,
   shield: f32,
+  phase_mode: bool,
   projectiles: Vec<BoxProjectile>,
   buffs: Vec<Box<Buff>>,
   hostility: Hostility,
@@ -159,6 +160,7 @@ impl EntityData {
       health_regen: 0.0,
       max_health: 100.0,
       shield: 0.0,
+      phase_mode: false,
       projectiles: Vec::new(),
       buffs: Vec::new(),
       hostility: Hostility::Friendly,
@@ -183,6 +185,7 @@ impl EntityData {
       health_regen: 0.0,
       max_health: 100.0,
       shield: 0.0,
+      phase_mode: false,
       projectiles: Vec::new(),
       buffs: Vec::new(),
       hostility: Hostility::Friendly,
@@ -305,6 +308,10 @@ pub trait Entity: EntityClone {
     self.data().should_exist
   }
   
+  fn is_in_phase_mode(&self) -> bool {
+    self.data().phase_mode
+  }
+  
   fn collision_circles(&self) -> Vec<Vector3<f32>> {
     let information = self.collision_information();
     
@@ -342,6 +349,10 @@ pub trait Entity: EntityClone {
       self.mut_data().should_exist = false;
       self.mut_data().health = 0.0;
     }
+  }
+  
+  fn set_phase_mode(&mut self, should_phase: bool) {
+    self.mut_data().phase_mode = should_phase;
   }
   
   fn set_velocity(&mut self, vel: Vector2<f32>) {
@@ -410,6 +421,38 @@ pub trait Entity: EntityClone {
     }
     
     self.mut_data().acceleration = Vector2::new(0.0, 0.0);
+  }
+  
+  fn entity_collision(&mut self, entity: &mut Box<Entity>, damage: f32, velocity: f32) {
+    let entity_circles = entity.collision_circles();
+    let astroid_circles = self.collision_circles();
+    
+    let mut collided = false;
+    
+    for e_circle in entity_circles {
+      for p_circle in &astroid_circles {
+        if math::circle_collision(e_circle, *p_circle) {
+          entity.hit(damage);
+          self.hit(damage);
+          
+          let center = (self.position()+entity.position())*0.5;
+          
+          let astroid_direction = math::normalise_vector2(self.position()-center);
+          let current_vel = self.velocity();
+          self.set_velocity(astroid_direction*velocity);
+          self.apply_acceleration_in_direction(astroid_direction);
+          
+          let entity_direction =  -1.0*astroid_direction;
+          let current_vel = entity.velocity();
+          entity.set_velocity(entity_direction*velocity);
+          entity.apply_acceleration_in_direction(entity_direction);
+          
+          collided = true;
+          break;
+        }
+      }
+      if collided { break; }
+    }
   }
   
   fn return_projectiles(&mut self) -> Vec<BoxProjectile> {

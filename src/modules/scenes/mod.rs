@@ -49,6 +49,7 @@ pub struct SceneData {
   models_to_load: Vec<(String, String)>,
   models_to_unload: Vec<String>,
   fps_last_frame: f64,
+  should_resize_window: Option<Vector2<f32>>,
 }
 
 impl SceneData {
@@ -75,6 +76,7 @@ impl SceneData {
       models_to_load: Vec::new(),
       models_to_unload: Vec::new(),
       fps_last_frame: 0.0,
+      should_resize_window: None,
     }
   }
   
@@ -101,6 +103,7 @@ impl SceneData {
       models_to_load: Vec::new(),
       models_to_unload: Vec::new(),
       fps_last_frame: 0.0,
+      should_resize_window: None,
     }
   }
   
@@ -124,6 +127,14 @@ pub trait Scene {
   
   fn update(&mut self, ui: Option<&Ui>, lua: Option<&mut Lua>, delta_time: f32);
   fn draw(&self, draw_calls: &mut Vec<DrawCall>);
+  
+  fn should_force_window_resize(&mut self) -> Option<Vector2<f32>> {
+    let resize = self.data().should_resize_window;
+    self.mut_data().should_resize_window = None;
+    
+    resize
+    
+  }
   
   fn scene_finished(&self) -> bool {
     self.data().next_scene

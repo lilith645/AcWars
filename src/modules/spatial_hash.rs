@@ -1,7 +1,9 @@
+use maat_graphics::DrawCall;
+
 use crate::modules::entities::{Entity, MutexEntity};
 use crate::modules::projectiles::{Projectile, MutexProjectile, BoxProjectile};
 
-use crate::cgmath::Vector2;
+use crate::cgmath::{Vector2,Vector4};
 
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -18,6 +20,10 @@ impl Content {
       index,
       objects,
     }
+  }
+  
+  pub fn has_multiple_entities(&self) -> bool {
+    self.objects.len() > 1
   }
 }
 
@@ -63,6 +69,32 @@ impl ObjectContainer {
     }
     
     return_objects
+  }
+  
+  pub fn retrieve_colliding_objects(&self) -> Vec<Vec<MutexEntity>> {
+    let mut return_objects = Vec::new();
+    for content in &self.contents {
+      if content.has_multiple_entities() {
+        let mut new_objects = Vec::with_capacity(content.objects.len());
+        for object in &content.objects {
+          new_objects.push(Arc::clone(object));
+        }
+        return_objects.push(new_objects);
+      }
+    }
+    
+    return_objects
+  }
+  
+  pub fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
+    for content in &self.contents {
+      let colour = Vector4::new((content.index.0 as f32+100.0)/255.0, (content.index.1 as f32+100.0)/255.0, 0.0, 1.0);
+      for mutex_object in &content.objects {
+        let object = mutex_object.lock().unwrap();
+        let pos = object.position();
+        draw_calls.push(DrawCall::draw_coloured(pos, Vector2::new(200.0, 200.0), colour, 0.0));
+      }
+    }
   }
 }
 
@@ -120,5 +152,13 @@ impl SpatialHash {
     }
     
     objects
+  }
+  
+  pub fn retrieve_possible_entity_collisions(&self) -> Vec<Vec<MutexEntity>> {
+    self.contents.retrieve_colliding_objects()
+  }
+  
+  pub fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
+    self.contents.draw(draw_calls);
   }
 }

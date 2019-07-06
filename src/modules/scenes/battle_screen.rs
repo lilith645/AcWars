@@ -9,7 +9,7 @@ use crate::modules::scenes::Scene;
 use crate::modules::scenes::SceneData;
 
 use crate::modules::buffs::{Buff, BoxBuff};
-use crate::modules::entities::{Entity, BoxEntity, MutexEntity, Ship, Brew};
+use crate::modules::entities::{Entity, MutexEntity, BoxEntity, Ship, Brew, Astroid};
 use crate::modules::projectiles::{Projectile, BoxProjectile, MutexProjectile};
 use crate::modules::controllers::{EntityController, AbilitySpamAi};
 use crate::modules::areas::{Area, BoxArea, SolarSystem, AstroidField};
@@ -41,7 +41,7 @@ pub struct BattleScreen {
   data: SceneData,
   areas: Vec<BoxArea>,
   input: player::Input,
-  ship: BoxEntity,
+  ship: MutexEntity,
   buffs: Vec<BoxBuff>,
   projectiles: Vec<MutexProjectile>,
   zoom: f32,
@@ -69,7 +69,7 @@ impl BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
       areas: vec!(solar_system,astroid_field),
       input: player::Input::new(),
-      ship: Box::new(Ship::new(Vector2::new(540.0, 600.0))),
+      ship: Arc::new(Mutex::new(Box::new(Astroid::new(Vector2::new(540.0, 600.0), Vector2::new(300.0, 300.0))))),
       buffs: Vec::new(),
       projectiles: Vec::new(),
       zoom: 0.75,
@@ -77,7 +77,7 @@ impl BattleScreen {
       ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
-      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(50.0))),
+      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
       pool: ThreadPool::new(5),
       tx,
       rx,
@@ -87,7 +87,7 @@ impl BattleScreen {
     }
   }
   
-  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: BoxEntity, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, zoom: f32) -> BattleScreen {
+  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: MutexEntity, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, zoom: f32) -> BattleScreen {
     let (tx, rx) = mpsc::channel();
     
     BattleScreen {
@@ -102,7 +102,7 @@ impl BattleScreen {
       ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
-      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(50.0))),
+      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
       pool: ThreadPool::new(5),
       tx,
       rx,
@@ -113,14 +113,17 @@ impl BattleScreen {
   }
   
   pub fn spatial_hash_collision(&self) {
+    
     let mut all_entities: Vec<MutexEntity> = Vec::new();
     
     let mut spatial_hash = self.spatial_hash.lock().unwrap();
+    spatial_hash.clear();
     for area in &self.areas {
       for mutex_entity in &area.entities() {
         spatial_hash.insert_object_for_point(Arc::clone(&mutex_entity));
       }
     }
+    spatial_hash.insert_object_for_point(Arc::clone(&self.ship));
     
     for i in 0..self.projectiles.len() {
       let mut projectile = self.projectiles[i].lock().unwrap();
@@ -142,7 +145,72 @@ impl BattleScreen {
       }
     }
     
+    let entity_groups = spatial_hash.retrieve_possible_entity_collisions();
+    for group in &entity_groups {
+      for i in 0..group.len() {
+        for j in i..group.len() {
+          if i == j {
+            continue;
+          }
+          let mut entity_one = group[i].lock().unwrap();
+          let mut entity_two = group[j].lock().unwrap();
+          
+          if entity_one.should_exist() && entity_two.should_exist() &&
+             !entity_one.is_in_phase_mode() && !entity_two.is_in_phase_mode() {
+            entity_one.collide_with(&mut *entity_two);
+            entity_two.collide_with(&mut *entity_one);
+          }
+        }
+      }
+    }
+    
     spatial_hash.clear();
+  }
+  
+  pub fn brute_force_collision(&mut self) {
+    let mut all_entities: Vec<MutexEntity> = Vec::new();
+    
+    for area in &self.areas {
+      for mutex_entity in &area.entities() {
+        all_entities.push(Arc::clone(&mutex_entity));
+      }
+    }
+    all_entities.push(Arc::clone(&self.ship));
+    
+    for i in 0..self.projectiles.len() {
+      let mut projectile = self.projectiles[i].lock().unwrap();
+      
+      // enemy collision 
+      for enemy_mutex in &all_entities {
+        if !projectile.should_exist() {
+          break;
+        }
+        
+        let mut enemy = enemy_mutex.lock().unwrap();
+        if projectile.can_hit(enemy.hostility()) {
+          if enemy.should_exist() {
+            self.collision_checks += 1;
+            projectile.collide_with(&mut *enemy);
+          }
+        }
+      }
+    }
+    
+    
+      for i in 0..all_entities.len() {
+        for j in i..all_entities.len() {
+          if i == j {
+            continue;
+          }
+          let mut entity_one = all_entities[i].lock().unwrap();
+          let mut entity_two = all_entities[j].lock().unwrap();
+          
+          if entity_one.should_exist() && entity_two.should_exist() {
+            entity_one.collide_with(&mut *entity_two);
+            entity_two.collide_with(&mut *entity_one);
+          }
+        }
+      }
   }
 }
 
@@ -182,9 +250,11 @@ impl Scene for BattleScreen {
     
     // UI
     let mut should_close = false;
+    let mut should_resize = None;
     for ui in &mut self.uis {
-      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, delta_time);
+      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut should_resize, delta_time);
     }
+    self.mut_data().should_resize_window = should_resize;
     if should_close {
       self.mut_data().should_close = true;
     }
@@ -194,66 +264,72 @@ impl Scene for BattleScreen {
       return;
     }
     
-    // Player
-    let left_stick_position =  self.data().controller.left_stick_position();
-    let xbox_a_button = self.data().controller.a_button_pressed();
-    let right_trigger_pressed = self.data().controller.right_trigger_pressed();
-    self.input.update(&mut self.ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
-    
-    let (mut buffs, mut new_projectiles) = self.ship.update(delta_time);
-    
-    let mut offset = 0;
-    for i in 0..self.buffs.len() {
-      self.buffs[i-offset].update(&mut self.ship, delta_time);
-      if !self.buffs[i-offset].should_exist() {
-        self.buffs[i-offset].unapply_buff(&mut self.ship);
-        self.buffs.remove(i-offset);
-        offset += 1;
-      }
-    }
-    
-    for buff in buffs {
-      buff.apply_buff(&mut self.ship);
-      self.buffs.push(buff);
-    }
-    
-    for area in &mut self.areas {
-      let projectiles = area.update(&mut self.ship, dim, delta_time);
-      for projectile in projectiles {
-        new_projectiles.push(projectile);
-      }
-    }
-    
-    // Projectiles
-    for new_projectile in new_projectiles {
-      self.projectiles.push(Arc::new(Mutex::new(new_projectile)));
-    }
-    
-    offset = 0;
-    for i in 0..self.projectiles.len() {
-      if i < offset {
-        break;
+    let ship_pos;
+    {
+      // Player
+      let left_stick_position =  self.data().controller.left_stick_position();
+      let xbox_a_button = self.data().controller.a_button_pressed();
+      let right_trigger_pressed = self.data().controller.right_trigger_pressed();
+      let mut ship = self.ship.lock().unwrap();
+      self.input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
+      
+      let (mut buffs, mut new_projectiles) = ship.update(delta_time);
+      
+      let mut offset = 0;
+      for i in 0..self.buffs.len() {
+        self.buffs[i-offset].update(&mut *ship, delta_time);
+        if !self.buffs[i-offset].should_exist() {
+          self.buffs[i-offset].unapply_buff(&mut *ship);
+          self.buffs.remove(i-offset);
+          offset += 1;
+        }
       }
       
-      let mut projectile_should_exist = true;
-      {
-        let mut projectile = self.projectiles[i-offset].lock().unwrap();
-        projectile.update(delta_time);
-        projectile_should_exist = projectile.should_exist();
+      for buff in buffs {
+        buff.apply_buff(&mut *ship);
+        self.buffs.push(buff);
       }
-      if !projectile_should_exist {
-        self.projectiles.remove(i-offset);
-        offset += 1;
+      
+      for area in &mut self.areas {
+        let projectiles = area.update(&mut *ship, dim, delta_time);
+        for projectile in projectiles {
+          new_projectiles.push(projectile);
+        }
       }
+      
+      // Projectiles
+      for new_projectile in new_projectiles {
+        self.projectiles.push(Arc::new(Mutex::new(new_projectile)));
+      }
+      
+      offset = 0;
+      for i in 0..self.projectiles.len() {
+        if i < offset {
+          break;
+        }
+        
+        let mut projectile_should_exist = true;
+        {
+          let mut projectile = self.projectiles[i-offset].lock().unwrap();
+          projectile.update(delta_time);
+          projectile_should_exist = projectile.should_exist();
+        }
+        if !projectile_should_exist {
+          self.projectiles.remove(i-offset);
+          offset += 1;
+        }
+      }
+      
+      ship_pos = ship.position();
     }
     
     // Check collisions 
     self.spatial_hash_collision();
-    
+    //self.brute_force_collision();
     self.ability_ui.update(dim);
     
     self.camera.window_resized(dim.x, dim.y);
-    let camera_target = self.ship.position()*self.zoom - Vector2::new(dim.x*0.5, dim.y*0.5);
+    let camera_target = ship_pos*self.zoom - Vector2::new(dim.x*0.5, dim.y*0.5);
     self.camera.lerp_to_position(camera_target,  Vector2::new(0.05, 0.05));
   }
   
@@ -287,7 +363,8 @@ impl Scene for BattleScreen {
       area.draw(draw_calls);
     }
     
-    self.ship.draw(draw_calls);
+    let ship = self.ship.lock().unwrap();
+    ship.draw(draw_calls);
     
     draw_calls.push(DrawCall::draw_instanced("Astroid".to_string(), "Astroid".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Sun".to_string(), "Sun".to_string()));
@@ -301,16 +378,18 @@ impl Scene for BattleScreen {
       area.draw_ship_ui(draw_calls);
     }
     
-    self.ship.draw_ship_ui(draw_calls);
+    ship.draw_ship_ui(draw_calls);
     
     /*
-    for projectile in &self.projectiles {
+    for mutex_projectile in &self.projectiles {
+      let projectile = mutex_projectile.lock().unwrap();
       projectile.draw_collision_circles(draw_calls);
     }
     for area in &self.areas {
       area.draw_collision_circles(draw_calls);
     }
-    self.ship.draw_collision_circles(draw_calls);
+    
+    ship.draw_collision_circles(draw_calls);
     */
     draw_calls.push(DrawCall::set_texture_scale(1.0));
     draw_calls.push(DrawCall::reset_ortho_camera());
@@ -324,6 +403,5 @@ impl Scene for BattleScreen {
     draw_calls.push(DrawCall::set_texture_scale(self.zoom));
     
     draw_calls.push(DrawCall::replace_ortho_camera(self.camera.clone()));
-    let pos = self.ship.position();
   }
 }

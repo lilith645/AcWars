@@ -191,6 +191,10 @@ fn main() {
     }
     
     if done { break; }
+    
+    if let Some(new_size) = game.should_force_window_resize() {
+      graphics.force_window_resize(new_size);
+    }
   }
   
   println!("Game Loop ended");

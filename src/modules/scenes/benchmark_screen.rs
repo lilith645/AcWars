@@ -60,7 +60,7 @@ pub struct BenchmarkScreen {
 
 impl BenchmarkScreen {
   pub fn new(window_size: Vector2<f32>) -> BenchmarkScreen {
-    let benchmark: BoxArea = Box::new(BenchmarkArea::new(Vector2::new(0.0, 0.0), Vector2::new(2000.0, 2000.0), 10));
+    let benchmark: BoxArea = Box::new(BenchmarkArea::new(Vector2::new(0.0, 0.0), Vector2::new(20000.0, 20000.0), 10));
     
     BenchmarkScreen {
       data: SceneData::new(window_size, Vec::new()),
@@ -206,9 +206,11 @@ impl BenchmarkScreen {
   }*/
   
   pub fn spatial_hash_collision(&self) {
+    
     let mut all_entities: Vec<MutexEntity> = Vec::new();
     
     let mut spatial_hash = self.spatial_hash.lock().unwrap();
+    spatial_hash.clear();
     for area in &self.areas {
       for mutex_entity in &area.entities() {
         spatial_hash.insert_object_for_point(Arc::clone(&mutex_entity));
@@ -231,6 +233,24 @@ impl BenchmarkScreen {
             if projectile.can_hit(entity.hostility()) {
               projectile.collide_with(&mut *entity);
             }
+          }
+        }
+      }
+    }
+    
+    let entity_groups = spatial_hash.retrieve_possible_entity_collisions();
+    for group in &entity_groups {
+      for i in 0..group.len() {
+        for j in i..group.len() {
+          if i == j {
+            continue;
+          }
+          let mut entity_one = group[i].lock().unwrap();
+          let mut entity_two = group[j].lock().unwrap();
+          
+          if entity_one.should_exist() && entity_two.should_exist() {
+            entity_one.collide_with(&mut *entity_two);
+            entity_two.collide_with(&mut *entity_one);
           }
         }
       }
@@ -351,7 +371,7 @@ impl Scene for BenchmarkScreen {
     // UI
     let mut should_close = false;
     for ui in &mut self.uis {
-      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, delta_time);
+      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut None, delta_time);
     }
     if should_close {
       self.mut_data().should_close = true;

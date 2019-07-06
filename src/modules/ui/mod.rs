@@ -99,26 +99,26 @@ pub trait Ui {
     }
   }
   
-  fn update_inner_uis(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, delta_time: f32) {
+  fn update_inner_uis(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, delta_time: f32) {
     if let Some(uis) = &mut self.mut_data().uis {
       for ui in uis {
-        ui.update(mouse_pos, left_mouse, escape_pressed, window_size, should_close, delta_time);
+        ui.update(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, delta_time);
       }
     }
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, delta_time: f32);
+  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool,  should_resize: &mut Option<Vector2<f32>>, delta_time: f32);
   fn check_if_needs_reenabling(&mut self);
   
-  fn update(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, _delta_time: f32) {
-    self.update_inner_uis(mouse_pos, left_mouse, escape_pressed, window_size, should_close, _delta_time);
+  fn update(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, _delta_time: f32) {
+    self.update_inner_uis(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, _delta_time);
     
     if !self.data().enabled {
       self.check_if_needs_reenabling();
       return;
     }
     
-    self.update_ui(mouse_pos, left_mouse, escape_pressed, window_size, should_close, _delta_time);
+    self.update_ui(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, _delta_time);
     self.update_widgets(mouse_pos, left_mouse, _delta_time);
   }
   

@@ -1,6 +1,6 @@
 use crate::modules::areas::{Area, AreaData};
 use crate::modules::entities::{FullEntity, Brew};
-use crate::modules::controllers::{IdleAi};
+use crate::modules::controllers::{IdleAi, AbilitySpamAi};
 use crate::modules::abilities::{Ability, SingleShot, Shatter, SunDamage};
 
 use crate::cgmath::Vector2;
@@ -20,7 +20,7 @@ impl BenchmarkArea {
       for j in 0..iterations {
         let position = position-size*0.5 + Vector2::new(size.x*(1.0/iterations as f32)*i as f32,
                                                          size.y*(1.0/iterations as f32)*j as f32);
-        let brew = FullEntity::new(Box::new(IdleAi::new().with_ability(Box::new(SingleShot::new()))), 
+        let brew = FullEntity::new(Box::new(AbilitySpamAi::new().with_ability(Box::new(SingleShot::new()))), 
                                    Box::new(Brew::new(position).as_hostile().with_health(15000000000000.0)));
         area = area.with_entity(brew);
       }

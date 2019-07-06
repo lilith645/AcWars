@@ -1,3 +1,5 @@
+use maat_graphics::math;
+
 use crate::modules::entities::sections::{Hull, Wing, Thruster, WeaponMount};
 use crate::modules::entities::{Entity, EntityData};
 use crate::modules::projectiles::Projectile;
@@ -51,6 +53,6 @@ impl Entity for Sun {
   }
   
   fn collide_with(&mut self, entity: &mut Box<Entity>) {
-    
+    self.entity_collision(entity, 20.0, 900.0);
   }
 }

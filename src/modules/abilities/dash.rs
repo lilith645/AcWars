@@ -3,7 +3,7 @@ use maat_graphics::math;
 use crate::modules::abilities::{Ability, AbilityData};
 use crate::modules::entities::{Entity, BoxEntity, Hostility};
 use crate::modules::projectiles::{Projectile, BoxProjectile};
-use crate::modules::buffs::{MaxSpeedBuff, SpeedBuff};
+use crate::modules::buffs::{MaxSpeedBuff, SpeedBuff, PhaseBuff};
 
 use crate::cgmath::{Vector2, InnerSpace};
 
@@ -41,5 +41,6 @@ impl Ability for Dash {
     let timer = 0.25;
     ship.activate_buff(Box::new(MaxSpeedBuff::new().with_timer(timer).with_multiplier(5.0)));
     ship.activate_buff(Box::new(SpeedBuff::new().with_timer(timer)));
+    ship.activate_buff(Box::new(PhaseBuff::new().with_timer(timer)));
   }
 }

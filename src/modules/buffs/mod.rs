@@ -1,8 +1,10 @@
 pub use self::max_speed_buff::MaxSpeedBuff;
 pub use self::speed_buff::SpeedBuff;
+pub use self::phase_buff::PhaseBuff;
 
 mod max_speed_buff;
 mod speed_buff;
+mod phase_buff;
 
 use crate::modules::entities::{Entity, BoxEntity};
 

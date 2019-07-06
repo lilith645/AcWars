@@ -14,7 +14,7 @@ pub struct DoubleShot {
 impl DoubleShot {
   pub fn new() -> DoubleShot {
     DoubleShot {
-      data: AbilityData::new_active("DoubleShotIcon".to_string(), 0.01),//0.15),
+      data: AbilityData::new_active("DoubleShotIcon".to_string(), 0.15),
     }
   }
 }

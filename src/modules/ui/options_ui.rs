@@ -22,6 +22,8 @@ enum WidgetIndex {
   FullscreenText,
   Msaa,
   MsaaText,
+  Resolution,
+  ResolutionText,
   Save,
   SaveText,
   Return,
@@ -47,7 +49,7 @@ impl OptionsUi {
     
     let background_colour = Vector4::new(0.2, 0.2, 0.3, 1.0);
     let button_colour = Vector4::new(0.8, 0.8, 0.8, 1.0);
-    let checked_box = Vector4::new(1.0, 0.0, 0.0, 1.0);
+    let checked_box = Vector4::new(0.2, 0.2, 0.2, 1.0);
     let font =  "Arial".to_string();
     let positions = OptionsUi::realign_widget_positions(window_size, Vector2::new(menu_width, menu_height));
     
@@ -70,8 +72,8 @@ impl OptionsUi {
     let vsync_checkbox_position = positions[WidgetIndex::Vsync.n()];
     let vsync_text_position = positions[WidgetIndex::VsyncText.n()];
     let mut vsync = Box::new(CheckBox::new(vsync_checkbox_position, Vector2::new(50.0, 50.0))
-                                       .with_primary_colour(checked_box)
-                                       .with_secondary_colour(button_colour));
+                                       .with_secondary_colour(button_colour)
+                                       .with_primary_colour(checked_box));
     let vsync_text = Box::new(Text::new(vsync_text_position, 128.0, &font, &"Vsync".to_string()));
     
     let fullscreen_checkbox_position = positions[WidgetIndex::Fullscreen.n()];
@@ -114,6 +116,19 @@ impl OptionsUi {
     
     let msaa_text = Box::new(Text::new(msaa_text_position, 128.0, &font, &"Msaa".to_string()));
     
+    let resolution_dropdown_position = positions[WidgetIndex::Resolution.n()];
+    let resolution_position = positions[WidgetIndex::ResolutionText.n()];
+    
+    let resolution_text = Box::new(Text::new(resolution_position, 128.0, &font, &"Resolution".to_string()));
+    let mut resolution = Box::new(DropdownBox::new(resolution_dropdown_position, Vector2::new(150.0, 50.0), "Arial".to_string())
+                                  .add_option("800x600".to_string())
+                                  .add_option("1024x1200".to_string())
+                                  .add_option("1280x1080".to_string())
+                                  .add_option("1920x1080".to_string())
+                                  .add_option("2560x1080".to_string())
+                                  .set_option(msaa_index)
+                                  .with_primary_colour(button_colour));
+    
     if vsync_setting {
       vsync.activate();
     }
@@ -131,6 +146,8 @@ impl OptionsUi {
                     .with_widget(fullscreen_text)
                     .with_widget(msaa)
                     .with_widget(msaa_text)
+                    .with_widget(resolution)
+                    .with_widget(resolution_text)
                     .with_widget(save_button)
                     .with_widget(save_text)
                     .with_widget(return_button)
@@ -161,8 +178,11 @@ impl OptionsUi {
     let msaa_text = background_position + Vector2::new(-menu_size.x*0.5, menu_size.y*0.5) + Vector2::new(50.0, -300.0);
     let msaa = msaa_text + Vector2::new(200.0, 15.0);
     
+    let resolution_text = background_position + Vector2::new(-menu_size.x*0.25, menu_size.y*0.5) + Vector2::new(50.0, -100.0);
+    let resolution = resolution_text + Vector2::new(275.0, 15.0);
+    
     // Backgound pos, resume pos, resume text pos, options pos, options text pos, quit pos, quit text pos
-    vec!(background_position, vsync, vsync_text, fullscreen, fullscreen_text, msaa, msaa_text, save_position, save_text, return_position, return_text)
+    vec!(background_position, vsync, vsync_text, fullscreen, fullscreen_text, msaa, msaa_text, resolution, resolution_text, save_position, save_text, return_position, return_text)
   }
 }
 
@@ -179,7 +199,7 @@ impl Ui for OptionsUi {
     
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, _delta_time: f32) {
+  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, _delta_time: f32) {
     let new_positions = OptionsUi::realign_widget_positions(window_size,
                                                           self.data().widgets[WidgetIndex::Background.n()].size());
     for i in 0..new_positions.len() {
@@ -212,6 +232,27 @@ impl Ui for OptionsUi {
           },
         }
       };
+      let resolution: Vector2<f32> = {
+        match self.data().widgets[WidgetIndex::Resolution.n()].text().as_ref() {
+          "800x600" => {
+            Vector2::new(800.0, 600.0)
+          },
+          "1024x1200" => {
+            Vector2::new(1024.0, 1200.0)
+          },          
+          "1920x1080" => {
+            Vector2::new(1920.0, 1080.0)
+          },
+          "2560x1080" => {
+            Vector2::new(2560.0, 1080.0)
+          },
+          "1280x1080" | _ => {
+            Vector2::new(1280.0, 1080.0)
+          },
+        }
+      };
+      *should_resize = Some(resolution);
+      self.settings.set_resolution(Vector2::new(resolution.x as i32, resolution.y as i32));
       self.settings.set_texture_msaa(msaa);
       self.settings.save();
       println!("settings svaed");

@@ -1,3 +1,5 @@
+use maat_graphics::math;
+
 use crate::modules::entities::sections::{Hull, Thruster, WeaponMount};
 use crate::modules::entities::{Entity, EntityData};
 use crate::modules::projectiles::Projectile;
@@ -61,6 +63,6 @@ impl Entity for Brew {
   }
   
   fn collide_with(&mut self, entity: &mut Box<Entity>) {
-    
+    self.entity_collision(entity, 0.5, 500.0);
   }
 }
