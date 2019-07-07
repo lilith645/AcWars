@@ -370,8 +370,9 @@ impl Scene for BenchmarkScreen {
     
     // UI
     let mut should_close = false;
+    let mut should_next_scene = false;
     for ui in &mut self.uis {
-      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut None, delta_time);
+      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut None, &mut should_next_scene, delta_time);
     }
     if should_close {
       self.mut_data().should_close = true;
@@ -547,7 +548,7 @@ impl Scene for BenchmarkScreen {
                                              Vector4::new(1.0, 1.0, 1.0, 1.0), 
                                              "Highest Benckmark fps: ".to_string() + &highest_fps, 
                                              "Arial".to_string()));
-  }
+    }
   }
 }
 

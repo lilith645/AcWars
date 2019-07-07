@@ -5,7 +5,7 @@ use hlua::Lua;
 
 use crate::modules::scenes::Scene;
 use crate::modules::scenes::SceneData;
-use crate::modules::scenes::{BattleScreen, BenchmarkScreen};
+use crate::modules::scenes::{ShipSelectScreen};
 use crate::cgmath::{Vector2, Vector4};
 
 const LOGO_TIMER: f32 = 1.5;
@@ -40,7 +40,7 @@ impl Scene for LoadScreen {
   }
   
   fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
-    Box::new(BattleScreen::new(window_size))
+    Box::new(ShipSelectScreen::new(window_size))
   }
   
   fn update(&mut self, _ui: Option<&Ui>, _lua: Option<&mut Lua>, delta_time: f32) {

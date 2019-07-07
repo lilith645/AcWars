@@ -113,7 +113,7 @@ impl Ui for PauseUi {
     }
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, mut should_close: &mut bool, _should_resize: &mut Option<Vector2<f32>>,  _delta_time: f32) {
+  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, mut should_close: &mut bool, _should_resize: &mut Option<Vector2<f32>>, should_next_scene: &mut bool, _delta_time: f32) {
     
     let new_positions = PauseUi::realign_widget_positions(window_size,
                                                           self.data().widgets[WidgetIndex::Background.n()].size().y);
@@ -134,7 +134,7 @@ impl Ui for PauseUi {
     }
     
     if self.data().widgets[WidgetIndex::Quit.n()].pressed() {
-      *should_close = true;
+      *should_next_scene = true;
     }
   }
 }

@@ -1,10 +1,12 @@
 pub use self::ability_ui::AbilityUi;
 pub use self::options_ui::OptionsUi;
 pub use self::pause_ui::PauseUi;
+pub use self::ship_select_ui::ShipSelectUi;
 
 mod ability_ui;
 mod options_ui;
 mod pause_ui;
+mod ship_select_ui;
 
 use maat_graphics::DrawCall;
 
@@ -18,6 +20,7 @@ pub struct UiData {
   widgets: Vec<Box<Widget>>,
   uis: Option<Vec<BoxUi>>,
   enabled: bool,
+  external_option_value: i32,
 }
 
 impl UiData {
@@ -26,6 +29,7 @@ impl UiData {
       widgets: Vec::new(),
       uis: None,
       enabled: true,
+      external_option_value: -1,
     }
   }
   
@@ -53,6 +57,10 @@ impl UiData {
 pub trait Ui {
   fn data(&self) -> &UiData;
   fn mut_data(&mut self) -> &mut UiData;
+  
+  fn external_option_value(&self) -> i32 {
+    self.data().external_option_value
+  }
   
   fn check_mouse_in_ui_space(&self, mouse_pos: Vector2<f32>) -> bool {
     let mut is_in_ui_space = false;
@@ -99,30 +107,34 @@ pub trait Ui {
     }
   }
   
-  fn update_inner_uis(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, delta_time: f32) {
+  fn update_inner_uis(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, should_next_scene: &mut bool, delta_time: f32) {
     if let Some(uis) = &mut self.mut_data().uis {
       for ui in uis {
-        ui.update(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, delta_time);
+        ui.update(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, should_next_scene, delta_time);
       }
     }
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool,  should_resize: &mut Option<Vector2<f32>>, delta_time: f32);
+  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool,  should_resize: &mut Option<Vector2<f32>>, should_next_scene: &mut bool, delta_time: f32);
   fn check_if_needs_reenabling(&mut self);
   
-  fn update(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, _delta_time: f32) {
-    self.update_inner_uis(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, _delta_time);
+  fn update(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, should_next_scene: &mut bool, _delta_time: f32) {
+    self.update_inner_uis(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, should_next_scene, _delta_time);
     
     if !self.data().enabled {
       self.check_if_needs_reenabling();
       return;
     }
     
-    self.update_ui(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, _delta_time);
+    self.update_ui(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, 
+                   should_next_scene, _delta_time);
     self.update_widgets(mouse_pos, left_mouse, _delta_time);
   }
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
+    draw_calls.push(DrawCall::set_texture_scale(1.0));
+    draw_calls.push(DrawCall::reset_ortho_camera());
+    
     if self.data().enabled {
       for widget in &self.data().widgets {
         widget.draw(draw_calls);

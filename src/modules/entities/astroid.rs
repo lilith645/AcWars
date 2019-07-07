@@ -18,8 +18,8 @@ impl Astroid {
      Astroid {
       data: EntityData::new(position, size, texture.to_string())
                         .with_max_velocity(300.0)
-                        .with_inertia(0.33)
-                        .with_health(50.0),
+                        .with_inertia(0.59)
+                        .with_health(150.0),
     }
   }
   

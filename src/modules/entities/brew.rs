@@ -22,7 +22,7 @@ impl Brew {
       data: EntityData::new(position, size, texture.to_string())
                         .with_max_velocity(500.0)
                         .with_inertia(0.33)
-                        .with_health(150.0)
+                        .with_health(100.0)
                         .with_ship_section(Box::new(Hull::new()))
                         .with_ship_section(Box::new(Thruster::new()))
                         .with_ship_section(Box::new(WeaponMount::new()))

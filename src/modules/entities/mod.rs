@@ -355,6 +355,10 @@ pub trait Entity: EntityClone {
     self.mut_data().phase_mode = should_phase;
   }
   
+  fn set_position(&mut self, position: Vector2<f32>) {
+    self.mut_data().position = position;
+  }
+  
   fn set_velocity(&mut self, vel: Vector2<f32>) {
     self.mut_data().velocity = vel;
   }

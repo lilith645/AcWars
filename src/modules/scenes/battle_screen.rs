@@ -5,8 +5,7 @@ use maat_graphics::ThreadPool;
 
 use maat_gui;
 
-use crate::modules::scenes::Scene;
-use crate::modules::scenes::SceneData;
+use crate::modules::scenes::{Scene, SceneData, ShipSelectScreen};
 
 use crate::modules::buffs::{Buff, BoxBuff};
 use crate::modules::entities::{Entity, MutexEntity, BoxEntity, Ship, Brew, Astroid};
@@ -59,17 +58,19 @@ pub struct BattleScreen {
 }
 
 impl BattleScreen {
-  pub fn new(window_size: Vector2<f32>) -> BattleScreen {
+  pub fn new(window_size: Vector2<f32>, mut ship: BoxEntity) -> BattleScreen {
     let (tx, rx) = mpsc::channel();
     
     let solar_system: BoxArea = Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0)));
     let astroid_field: BoxArea = Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(500.0, 1000.0)));
     
+    ship.set_position(Vector2::new(540.0, 600.0));
+    
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
       areas: vec!(solar_system,astroid_field),
       input: player::Input::new(),
-      ship: Arc::new(Mutex::new(Box::new(Astroid::new(Vector2::new(540.0, 600.0), Vector2::new(300.0, 300.0))))),
+      ship: Arc::new(Mutex::new(ship)),
       buffs: Vec::new(),
       projectiles: Vec::new(),
       zoom: 0.75,
@@ -224,7 +225,11 @@ impl Scene for BattleScreen {
   }
   
   fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
-    Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.buffs.clone(), self.projectiles.clone(), self.zoom))
+    if self.data().window_resized {
+      Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.buffs.clone(), self.projectiles.clone(), self.zoom))
+    } else {
+      Box::new(ShipSelectScreen::new(window_size))
+    }
   }
   
   fn update(&mut self, _ui: Option<&imgui::Ui>, _lua: Option<&mut Lua>, delta_time: f32) {
@@ -251,13 +256,18 @@ impl Scene for BattleScreen {
     // UI
     let mut should_close = false;
     let mut should_resize = None;
+    let mut should_next_scene = false;
     for ui in &mut self.uis {
-      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut should_resize, delta_time);
+      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut should_resize, &mut should_next_scene, delta_time);
     }
     self.mut_data().should_resize_window = should_resize;
     if should_close {
       self.mut_data().should_close = true;
     }
+      
+    if should_next_scene || { let ship = self.ship.lock().unwrap(); !ship.should_exist() } {
+      self.mut_data().next_scene = true;
+     }
     
     self.escape_pressed_last_frame = self.data().keys.escape_pressed();
     if self.uis[UiIndex::PauseUi.n()].enabled() {

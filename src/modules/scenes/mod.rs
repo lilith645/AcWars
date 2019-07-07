@@ -17,10 +17,12 @@ use crate::cgmath::{Vector2, Vector3};
 pub use self::load_screen::LoadScreen;
 pub use self::battle_screen::BattleScreen;
 pub use self::benchmark_screen::BenchmarkScreen;
+pub use self::ship_select_screen::ShipSelectScreen;
 
 mod load_screen;
 mod battle_screen;
 mod benchmark_screen;
+mod ship_select_screen;
 
 pub struct ImGuiInfo {
   _wants_mouse: bool,
