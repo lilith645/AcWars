@@ -2,11 +2,13 @@ pub use self::ability_ui::AbilityUi;
 pub use self::options_ui::OptionsUi;
 pub use self::pause_ui::PauseUi;
 pub use self::ship_select_ui::ShipSelectUi;
+pub use self::ship_module_viewer::ShipModuleViewer;
 
 mod ability_ui;
 mod options_ui;
 mod pause_ui;
 mod ship_select_ui;
+mod ship_module_viewer;
 
 use maat_graphics::DrawCall;
 
@@ -16,6 +18,7 @@ use crate::cgmath::Vector2;
 
 pub type BoxUi = Box<Ui>;
 
+#[derive(Clone)]
 pub struct UiData {
   widgets: Vec<Box<Widget>>,
   uis: Option<Vec<BoxUi>>,
@@ -54,7 +57,23 @@ impl UiData {
   }
 }
 
-pub trait Ui {
+pub trait UiClone {
+  fn clone_ui(&self) -> Box<Ui>;
+}
+
+impl<T: 'static + Ui + Clone> UiClone for T {
+  fn clone_ui(&self) -> Box<Ui> {
+    Box::new(self.clone())
+  }
+}
+
+impl Clone for Box<Ui> {
+  fn clone(&self) -> Box<Ui> {
+    self.clone_ui()
+  }
+}
+
+pub trait Ui: UiClone {
   fn data(&self) -> &UiData;
   fn mut_data(&mut self) -> &mut UiData;
   

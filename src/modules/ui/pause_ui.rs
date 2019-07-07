@@ -31,6 +31,7 @@ impl WidgetIndex {
   }
 }
 
+#[derive(Clone)]
 pub struct PauseUi {
   data: UiData,
   options_ui_opened: bool,

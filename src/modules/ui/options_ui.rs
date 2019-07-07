@@ -9,6 +9,7 @@ use crate::cgmath::{Vector2, Vector4};
 const BUTTON_WIDTH: f32 = 120.0;
 const BUTTON_HEIGHT: f32 = 40.0;
 
+#[derive(Clone)]
 pub struct OptionsUi {
   data: UiData,
   settings: Settings,

@@ -13,7 +13,7 @@ use crate::modules::projectiles::{Projectile, BoxProjectile, MutexProjectile};
 use crate::modules::controllers::{EntityController, AbilitySpamAi};
 use crate::modules::areas::{Area, BoxArea, SolarSystem, AstroidField};
 use crate::modules::player;
-use crate::modules::ui::{Ui,BoxUi, PauseUi, AbilityUi};
+use crate::modules::ui::{Ui,BoxUi, PauseUi, AbilityUi, ShipModuleViewer};
 
 use crate::cgmath::{Vector2, InnerSpace};
 
@@ -26,6 +26,7 @@ use crate::modules::spatial_hash::SpatialHash;
 use crate::modules::kdtree::Node;
 
 enum UiIndex {
+  ModuleViewer,
   PauseUi,
   AbilityUi,
 }
@@ -48,24 +49,21 @@ pub struct BattleScreen {
   ability_ui: AbilityUi,
   uis: Vec<BoxUi>,
   escape_pressed_last_frame: bool, 
+  i_pressed_last_frame: bool, 
   spatial_hash: Arc<Mutex<SpatialHash>>,
-  pool: ThreadPool,
-  tx: mpsc::Sender<usize>,
-  rx: mpsc::Receiver<usize>,
-  thread_finished: bool,
   collision_checks: u64,
   kdtree: Option<Box<Node>>,
 }
 
 impl BattleScreen {
   pub fn new(window_size: Vector2<f32>, mut ship: BoxEntity) -> BattleScreen {
-    let (tx, rx) = mpsc::channel();
-    
     let solar_system: BoxArea = Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0)));
     let astroid_field: BoxArea = Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(500.0, 1000.0)));
     
     ship.set_position(Vector2::new(540.0, 600.0));
     
+    let mut module_viewer = ShipModuleViewer::new(window_size);
+    module_viewer.disable();
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
       areas: vec!(solar_system,astroid_field),
@@ -76,21 +74,16 @@ impl BattleScreen {
       zoom: 0.75,
       camera: OrthoCamera::new(window_size.x, window_size.y),
       ability_ui: AbilityUi::new(),
-      uis: vec!(Box::new(PauseUi::new(window_size))),
+      uis: vec!(Box::new(module_viewer), Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
+      i_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
-      pool: ThreadPool::new(5),
-      tx,
-      rx,
-      thread_finished: false,
       collision_checks: 0,
       kdtree: None,
     }
   }
   
-  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: MutexEntity, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, zoom: f32) -> BattleScreen {
-    let (tx, rx) = mpsc::channel();
-    
+  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: MutexEntity, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, uis: Vec<Box<Ui>>, zoom: f32) -> BattleScreen {
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()), 
       areas,
@@ -101,13 +94,10 @@ impl BattleScreen {
       zoom,
       camera,
       ability_ui: AbilityUi::new(),
-      uis: vec!(Box::new(PauseUi::new(window_size))),
+      uis,
       escape_pressed_last_frame: false,
+      i_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
-      pool: ThreadPool::new(5),
-      tx,
-      rx,
-      thread_finished: false,
       collision_checks: 0,
       kdtree: None,
     }
@@ -197,21 +187,182 @@ impl BattleScreen {
       }
     }
     
-    
-      for i in 0..all_entities.len() {
-        for j in i..all_entities.len() {
-          if i == j {
-            continue;
-          }
-          let mut entity_one = all_entities[i].lock().unwrap();
-          let mut entity_two = all_entities[j].lock().unwrap();
-          
-          if entity_one.should_exist() && entity_two.should_exist() {
-            entity_one.collide_with(&mut *entity_two);
-            entity_two.collide_with(&mut *entity_one);
-          }
+    for i in 0..all_entities.len() {
+      for j in i..all_entities.len() {
+        if i == j {
+          continue;
+        }
+        let mut entity_one = all_entities[i].lock().unwrap();
+        let mut entity_two = all_entities[j].lock().unwrap();
+        
+        if entity_one.should_exist() && entity_two.should_exist() {
+          entity_one.collide_with(&mut *entity_two);
+          entity_two.collide_with(&mut *entity_one);
         }
       }
+    }
+  }
+  
+  pub fn update_pause(&mut self, dim: Vector2<f32>, escape_pressed: bool, delta_time: f32) -> bool {
+    let mouse_pos = self.data().mouse_pos;
+    let left_mouse = self.data().left_mouse;
+    
+    // Pause Ui
+    if escape_pressed {
+      if self.uis[UiIndex::PauseUi.n()].enabled() {
+        self.uis[UiIndex::PauseUi.n()].disable();
+      } else {
+        self.uis[UiIndex::PauseUi.n()].enable();
+      }
+    }
+    
+    let mut should_close = false;
+    let mut should_resize = None;
+    let mut should_next_scene = false;
+    self.uis[UiIndex::PauseUi.n()].update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, 
+                                          &mut should_resize, &mut should_next_scene, delta_time);
+    if should_resize.is_some() {
+      self.mut_data().should_resize_window = should_resize;
+    }
+    if should_close {
+      self.mut_data().should_close = true;
+    }
+      
+    if should_next_scene {
+      self.mut_data().next_scene = true;
+    }
+    
+    self.uis[UiIndex::PauseUi.n()].enabled()
+  }
+  
+  pub fn update_ui(&mut self, dim: Vector2<f32>, escape_pressed: bool, i_pressed: bool, delta_time: f32) {
+    let mouse_pos = self.data().mouse_pos;
+    let left_mouse = self.data().left_mouse;
+    
+    // Module Viewer Ui
+    if i_pressed {
+      if self.uis[UiIndex::ModuleViewer.n()].enabled() {
+        self.uis[UiIndex::ModuleViewer.n()].disable();
+      } else {
+        self.uis[UiIndex::ModuleViewer.n()].enable();
+      }
+    }
+    
+    // UI
+    let mut should_close = false;
+    let mut should_resize = None;
+    let mut should_next_scene = false;
+    for i in 0..self.uis.len() {
+      if i == UiIndex::PauseUi.n() {
+        continue;
+      }
+      
+      self.uis[i].update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut should_resize, 
+                         &mut should_next_scene, delta_time);
+    }
+    
+    if should_resize.is_some() {
+      self.mut_data().should_resize_window = should_resize;
+    }
+    
+    if should_close {
+      self.mut_data().should_close = true;
+    }
+      
+    if should_next_scene || { let ship = self.ship.lock().unwrap(); !ship.should_exist() } {
+      self.mut_data().next_scene = true;
+    }
+    
+    
+    if self.uis[UiIndex::PauseUi.n()].enabled() {
+      return;
+    }
+  }
+  
+  pub fn update_player(&mut self, dim: Vector2<f32>, delta_time: f32) -> Vec<BoxProjectile> {
+    // Player
+    let left_stick_position =  self.data().controller.left_stick_position();
+    let xbox_a_button = self.data().controller.a_button_pressed();
+    let right_trigger_pressed = self.data().controller.right_trigger_pressed();
+    
+    let mouse_pos = self.data().mouse_pos;
+    let left_mouse = self.data.left_mouse;
+    let middle_mouse = self.data.middle_mouse;
+    let right_mouse = self.data.right_mouse;
+    
+    let q_pressed = self.data.keys.q_pressed();
+    
+    let mut ship = self.ship.lock().unwrap();
+    self.input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
+    
+    let (mut buffs, mut new_projectiles) = ship.update(delta_time);
+    
+    let mut offset = 0;
+    for i in 0..self.buffs.len() {
+      self.buffs[i-offset].update(&mut *ship, delta_time);
+      if !self.buffs[i-offset].should_exist() {
+        self.buffs[i-offset].unapply_buff(&mut *ship);
+        self.buffs.remove(i-offset);
+        offset += 1;
+      }
+    }
+    
+    for buff in buffs {
+      buff.apply_buff(&mut *ship);
+      self.buffs.push(buff);
+    }
+    
+    new_projectiles
+  }
+  
+  pub fn update_areas(&mut self, dim: Vector2<f32>, delta_time: f32) -> Vec<BoxProjectile> {
+    let mut new_projectiles = Vec::new();
+    
+    let mut ship = self.ship.lock().unwrap();
+    for area in &mut self.areas {
+      let projectiles = area.update(&mut *ship, dim, delta_time);
+      for projectile in projectiles {
+        new_projectiles.push(projectile);
+      }
+    }
+    
+    new_projectiles
+  }
+  
+  pub fn update_projectiles(&mut self, player_projectiles: Vec<BoxProjectile>, entity_projectiles: Vec<BoxProjectile>, delta_time: f32) {
+    // Projectiles 
+    for new_projectile in player_projectiles {
+      self.projectiles.push(Arc::new(Mutex::new(new_projectile)));
+    }
+    
+    for new_projectile in entity_projectiles {
+      self.projectiles.push(Arc::new(Mutex::new(new_projectile)));
+    }
+    
+    let mut offset = 0;
+    for i in 0..self.projectiles.len() {
+      if i < offset {
+        break;
+      }
+      
+      let mut projectile_should_exist = true;
+      {
+        let mut projectile = self.projectiles[i-offset].lock().unwrap();
+        projectile.update(delta_time);
+        projectile_should_exist = projectile.should_exist();
+      }
+      if !projectile_should_exist {
+        self.projectiles.remove(i-offset);
+        offset += 1;
+      }
+    }
+  }
+  
+  pub fn update_camera(&mut self, dim: Vector2<f32>) {
+    let ship_pos = {let ship = self.ship.lock().unwrap(); ship.position() };
+    self.camera.window_resized(dim.x, dim.y);
+    let camera_target = ship_pos*self.zoom - Vector2::new(dim.x*0.5, dim.y*0.5);
+    self.camera.lerp_to_position(camera_target,  Vector2::new(0.05, 0.05));
   }
 }
 
@@ -226,7 +377,7 @@ impl Scene for BattleScreen {
   
   fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
     if self.data().window_resized {
-      Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.buffs.clone(), self.projectiles.clone(), self.zoom))
+      Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.buffs.clone(), self.projectiles.clone(), self.uis.clone(), self.zoom))
     } else {
       Box::new(ShipSelectScreen::new(window_size))
     }
@@ -243,104 +394,26 @@ impl Scene for BattleScreen {
     let right_mouse = self.data.right_mouse;
     let q_pressed = self.data.keys.q_pressed();
     let escape_pressed = self.data.keys.escape_pressed() && !self.escape_pressed_last_frame;
-    
-    // Key presses
-    if escape_pressed {
-      if self.uis[UiIndex::PauseUi.n()].enabled() {
-        self.uis[UiIndex::PauseUi.n()].disable();
-      } else {
-        self.uis[UiIndex::PauseUi.n()].enable();
-      }
-    }
-    
-    // UI
-    let mut should_close = false;
-    let mut should_resize = None;
-    let mut should_next_scene = false;
-    for ui in &mut self.uis {
-      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut should_resize, &mut should_next_scene, delta_time);
-    }
-    self.mut_data().should_resize_window = should_resize;
-    if should_close {
-      self.mut_data().should_close = true;
-    }
-      
-    if should_next_scene || { let ship = self.ship.lock().unwrap(); !ship.should_exist() } {
-      self.mut_data().next_scene = true;
-     }
+    let i_pressed = self.data.keys.i_pressed() && !self.i_pressed_last_frame;
     
     self.escape_pressed_last_frame = self.data().keys.escape_pressed();
-    if self.uis[UiIndex::PauseUi.n()].enabled() {
+    self.i_pressed_last_frame = self.data().keys.i_pressed();
+    
+    self.update_camera(dim);
+    
+    if self.update_pause(dim, escape_pressed, delta_time) {
       return;
     }
     
-    let ship_pos;
-    {
-      // Player
-      let left_stick_position =  self.data().controller.left_stick_position();
-      let xbox_a_button = self.data().controller.a_button_pressed();
-      let right_trigger_pressed = self.data().controller.right_trigger_pressed();
-      let mut ship = self.ship.lock().unwrap();
-      self.input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
-      
-      let (mut buffs, mut new_projectiles) = ship.update(delta_time);
-      
-      let mut offset = 0;
-      for i in 0..self.buffs.len() {
-        self.buffs[i-offset].update(&mut *ship, delta_time);
-        if !self.buffs[i-offset].should_exist() {
-          self.buffs[i-offset].unapply_buff(&mut *ship);
-          self.buffs.remove(i-offset);
-          offset += 1;
-        }
-      }
-      
-      for buff in buffs {
-        buff.apply_buff(&mut *ship);
-        self.buffs.push(buff);
-      }
-      
-      for area in &mut self.areas {
-        let projectiles = area.update(&mut *ship, dim, delta_time);
-        for projectile in projectiles {
-          new_projectiles.push(projectile);
-        }
-      }
-      
-      // Projectiles
-      for new_projectile in new_projectiles {
-        self.projectiles.push(Arc::new(Mutex::new(new_projectile)));
-      }
-      
-      offset = 0;
-      for i in 0..self.projectiles.len() {
-        if i < offset {
-          break;
-        }
-        
-        let mut projectile_should_exist = true;
-        {
-          let mut projectile = self.projectiles[i-offset].lock().unwrap();
-          projectile.update(delta_time);
-          projectile_should_exist = projectile.should_exist();
-        }
-        if !projectile_should_exist {
-          self.projectiles.remove(i-offset);
-          offset += 1;
-        }
-      }
-      
-      ship_pos = ship.position();
-    }
+    self.update_ui(dim, escape_pressed, i_pressed, delta_time);
+    self.ability_ui.update(dim);
+    
+    let mut player_projectiles = self.update_player(dim, delta_time);
+    let mut entity_projectiles = self.update_areas(dim, delta_time);
+    self.update_projectiles(player_projectiles, entity_projectiles, delta_time);
     
     // Check collisions 
     self.spatial_hash_collision();
-    //self.brute_force_collision();
-    self.ability_ui.update(dim);
-    
-    self.camera.window_resized(dim.x, dim.y);
-    let camera_target = ship_pos*self.zoom - Vector2::new(dim.x*0.5, dim.y*0.5);
-    self.camera.lerp_to_position(camera_target,  Vector2::new(0.05, 0.05));
   }
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {

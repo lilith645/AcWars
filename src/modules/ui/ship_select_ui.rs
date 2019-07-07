@@ -31,6 +31,7 @@ impl WidgetIndex {
   }
 }
 
+#[derive(Clone)]
 pub struct ShipSelectUi {
   data: UiData,
 }
