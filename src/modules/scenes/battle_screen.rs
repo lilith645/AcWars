@@ -231,6 +231,7 @@ impl BattleScreen {
       
     if should_next_scene {
       self.mut_data().next_scene = true;
+      self.mut_data().window_resized = false;
     }
     
     self.uis[UiIndex::PauseUi.n()].enabled()
