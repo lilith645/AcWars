@@ -323,6 +323,7 @@ impl Scene for BenchmarkScreen {
       self.all_fps.sort_by(|a, b| a.partial_cmp(b).unwrap());
     }
     
+    let scroll_delta = self.data.scroll_delta;
     let mut left_mouse = self.data.left_mouse;
     let middle_mouse = self.data.middle_mouse;
     let mut right_mouse = self.data.right_mouse;
@@ -372,7 +373,7 @@ impl Scene for BenchmarkScreen {
     let mut should_close = false;
     let mut should_next_scene = false;
     for ui in &mut self.uis {
-      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut None, &mut should_next_scene, delta_time);
+      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut None, &mut should_next_scene, scroll_delta, delta_time);
     }
     if should_close {
       self.mut_data().should_close = true;

@@ -13,6 +13,7 @@ const BUTTON_HEIGHT: f32 = 40.0;
 pub struct OptionsUi {
   data: UiData,
   settings: Settings,
+  resolution_indexs: Vec<usize>,
 }
 
 enum WidgetIndex {
@@ -40,7 +41,7 @@ impl WidgetIndex {
 impl OptionsUi {
   pub fn new(window_size: Vector2<f32>) -> OptionsUi {
     let iwindow_size = Vector2::new(window_size.x as i32, window_size.y as i32);
-    let settings = Settings::load(iwindow_size, iwindow_size);
+    let settings = Settings::load();
     let vsync_setting = settings.vsync_enabled();
     let fullscreen_setting = settings.is_fullscreen();
     let msaa = settings.get_texture_msaa();
@@ -56,7 +57,7 @@ impl OptionsUi {
     let (mut vsync, vsync_text) = OptionsUi::create_vsync_button(window_size, &font, checked_box, button_colour);
     let (mut fullscreen, fullscreen_text) = OptionsUi::create_fullscreen_button(window_size, &font, checked_box, button_colour);
     let (msaa, msaa_text) = OptionsUi::create_msaa_dropdownbox(window_size, &font, button_colour, msaa);
-    let (resolution, resolution_text) = OptionsUi::create_resolution_dropdownbox(window_size, &font, button_colour);
+    let (resolution, resolution_text, resolution_indexs) = OptionsUi::create_resolution_dropdownbox(window_size, &font, button_colour, &settings);
     
     if vsync_setting {
       vsync.activate();
@@ -82,6 +83,7 @@ impl OptionsUi {
                     .with_widget(return_button)
                     .with_widget(return_text),
       settings,
+      resolution_indexs,
     }
   }
   
@@ -186,7 +188,7 @@ impl OptionsUi {
     (Box::new(msaa), msaa_text)
   }
   
-  fn create_resolution_dropdownbox(window_size: Vector2<f32>, font: &String, primary_colour: Vector4<f32>) -> (Box<Widget>, Box<Widget>) {
+  fn create_resolution_dropdownbox(window_size: Vector2<f32>, font: &String, primary_colour: Vector4<f32>, settings: &Settings) -> (Box<Widget>, Box<Widget>, Vec<usize>) {
     let pos = OptionsUi::resolution_dropdown_position(window_size);
     let text_pos = OptionsUi::resolution_dropdown_text_position(window_size);
     
@@ -195,14 +197,16 @@ impl OptionsUi {
     let resolution_text = Box::new(Text::new(pos, text, &font, &"Resolution".to_string()));
     let mut resolution = DropdownBox::new(text_pos, size, "Arial".to_string());
     
-    let mut options = OptionsUi::resolution_options();
+    let (resolution_options, resolution_indexs, selected_index) = OptionsUi::resolution_options(settings, window_size);
     
-    for option in options {
+    for option in resolution_options {
       resolution = resolution.add_option(option.to_string());
+      
     }
-    resolution = resolution.set_option(1).with_primary_colour(primary_colour);
     
-    (Box::new(resolution), resolution_text)
+    resolution = resolution.set_option(selected_index+1).with_primary_colour(primary_colour);
+    
+    (Box::new(resolution), resolution_text, resolution_indexs)
   }
   
   fn background_position(window_size: Vector2<f32>) -> Vector2<f32> {
@@ -214,7 +218,7 @@ impl OptionsUi {
   }
   
   fn resolution_dropdownbox_size(window_size: Vector2<f32>) -> Vector2<f32> {
-    Vector2::new(window_size.y/7.2, window_size.y/21.6)
+    Vector2::new(window_size.y/3.0, window_size.y/21.6)
   }
   
   fn dropdownbox_size(window_size: Vector2<f32>) -> Vector2<f32> {
@@ -322,8 +326,27 @@ impl OptionsUi {
     resolution_text
   }
   
-  fn resolution_options() -> Vec<String> {
-    vec!("800x600".to_string(), "1280x720".to_string(), "1280x1080".to_string(), "1920x1080".to_string(), "2560x1080".to_string())
+  fn resolution_options(settings: &Settings, window_size: Vector2<f32>) -> (Vec<String>, Vec<usize>, u32) {
+    let max_resolution = settings.max_monitor_resolution();
+    
+    let mut resolutions = Vec::new();
+    
+    let mut index_references = Vec::new();
+    let mut selected_index = 0;
+    
+    let mut i = 0;
+    for ((width, height, ratio)) in Settings::resolutions().iter() {
+      if *width <= max_resolution[0] && *height <= max_resolution[1] {
+        resolutions.push(width.to_string().to_owned() + &"x" + &height.to_string() + " " + ratio);
+        index_references.push(i);
+        if *width == window_size.x as u32 && *height == window_size.y as u32 {
+          selected_index = index_references.len() as u32-1;
+        }
+      }
+      i+=1;
+    }
+    
+    (resolutions, index_references, selected_index)
   }
   
   fn realign_widget_positions(window_size: Vector2<f32>) -> Vec<Vector2<f32>> {
@@ -428,24 +451,14 @@ impl Ui for OptionsUi {
         }
       };
       let resolution: Vector2<f32> = {
-        match self.data().widgets[WidgetIndex::Resolution.n()].text().as_ref() {
-          "800x600" => {
-            Vector2::new(800.0, 600.0)
-          },
-          "1280x720" => {
-            Vector2::new(1280.0, 720.0)
-          },          
-          "1920x1080" => {
-            Vector2::new(1920.0, 1080.0)
-          },
-          "2560x1080" => {
-            Vector2::new(2560.0, 1080.0)
-          },
-          "1280x1080" | _ => {
-            Vector2::new(1280.0, 1080.0)
-          },
-        }
+        let mut index = self.data().widgets[WidgetIndex::Resolution.n()].external_option_value();
+        
+        let i = self.resolution_indexs[index as usize];
+        let resolutions = Settings::resolutions();
+        
+        Vector2::new(resolutions[i].0 as f32, resolutions[i].1 as f32)
       };
+      
       let is_fullscreen = self.data().widgets[WidgetIndex::Fullscreen.n()].activated();
       *should_resize = Some((resolution, is_fullscreen));
       

@@ -62,13 +62,14 @@ impl Scene for ShipSelectScreen {
     let dim = self.data().window_dim;
     let mouse_pos = self.data.mouse_pos;
     
+    let scroll_delta = self.data.scroll_delta;
     let left_mouse = self.data.left_mouse;
     let escape_pressed = self.data.keys.escape_pressed() && !self.escape_pressed_last_frame;
     
     let mut should_close = false;
     let mut should_resize = None;
     let mut should_next_scene = false;
-    self.select_ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut should_resize, &mut should_next_scene, delta_time);
+    self.select_ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut should_resize, &mut should_next_scene, scroll_delta, delta_time);
     self.mut_data().should_resize_window = should_resize;
     if should_close {
       self.mut_data().should_close = true;

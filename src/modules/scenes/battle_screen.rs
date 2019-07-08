@@ -206,6 +206,7 @@ impl BattleScreen {
   pub fn update_pause(&mut self, dim: Vector2<f32>, escape_pressed: bool, delta_time: f32) -> bool {
     let mouse_pos = self.data().mouse_pos;
     let left_mouse = self.data().left_mouse;
+    let scroll_delta = self.data().scroll_delta;
     
     // Pause Ui
     if escape_pressed {
@@ -220,7 +221,7 @@ impl BattleScreen {
     let mut should_resize = None;
     let mut should_next_scene = false;
     self.uis[UiIndex::PauseUi.n()].update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, 
-                                          &mut should_resize, &mut should_next_scene, delta_time);
+                                          &mut should_resize, &mut should_next_scene, scroll_delta, delta_time);
     if should_resize.is_some() {
       self.mut_data().should_resize_window = should_resize;
     }
@@ -238,6 +239,7 @@ impl BattleScreen {
   pub fn update_ui(&mut self, dim: Vector2<f32>, escape_pressed: bool, i_pressed: bool, delta_time: f32) {
     let mouse_pos = self.data().mouse_pos;
     let left_mouse = self.data().left_mouse;
+    let scroll_delta = self.data().scroll_delta;
     
     // Module Viewer Ui
     if i_pressed {
@@ -258,7 +260,7 @@ impl BattleScreen {
       }
       
       self.uis[i].update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut should_resize, 
-                         &mut should_next_scene, delta_time);
+                         &mut should_next_scene, scroll_delta, delta_time);
     }
     
     if should_resize.is_some() {
