@@ -53,6 +53,6 @@ impl Entity for Sun {
   }
   
   fn collide_with(&mut self, entity: &mut Box<Entity>) {
-    self.entity_collision(entity, 20.0, 900.0);
+    self.entity_collision(entity, 10.0, 900.0);
   }
 }

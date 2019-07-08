@@ -94,7 +94,7 @@ impl Ui for ShipModuleViewer {
     
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, mut should_close: &mut bool, _should_resize: &mut Option<Vector2<f32>>, should_next_scene: &mut bool, _delta_time: f32) {
+  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, mut should_close: &mut bool, _should_resize: &mut Option<(Vector2<f32>, bool)>, should_next_scene: &mut bool, _delta_time: f32) {
     let new_positions = ShipModuleViewer::updated_positions(window_size);
     let new_sizes = ShipModuleViewer::updated_sizes(window_size);
     for i in 0..self.data().widgets.len() {

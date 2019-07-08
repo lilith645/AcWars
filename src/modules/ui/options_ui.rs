@@ -393,7 +393,7 @@ impl Ui for OptionsUi {
     
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, _should_next_scene: &mut bool, _delta_time: f32) {
+  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<(Vector2<f32>, bool)>, _should_next_scene: &mut bool, _delta_time: f32) {
     let new_positions = OptionsUi::realign_widget_positions(window_size);
     let new_sizes = OptionsUi::realign_widget_sizes(window_size);
     for i in 0..new_positions.len() {
@@ -446,7 +446,9 @@ impl Ui for OptionsUi {
           },
         }
       };
-      *should_resize = Some(resolution);
+      let is_fullscreen = self.data().widgets[WidgetIndex::Fullscreen.n()].activated();
+      *should_resize = Some((resolution, is_fullscreen));
+      
       self.settings.set_resolution(Vector2::new(resolution.x as i32, resolution.y as i32));
       self.settings.set_texture_msaa(msaa);
       self.settings.save();

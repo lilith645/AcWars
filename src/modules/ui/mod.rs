@@ -126,7 +126,7 @@ pub trait Ui: UiClone {
     }
   }
   
-  fn update_inner_uis(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, should_next_scene: &mut bool, delta_time: f32) {
+  fn update_inner_uis(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<(Vector2<f32>, bool)>, should_next_scene: &mut bool, delta_time: f32) {
     if let Some(uis) = &mut self.mut_data().uis {
       for ui in uis {
         ui.update(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, should_next_scene, delta_time);
@@ -134,10 +134,10 @@ pub trait Ui: UiClone {
     }
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool,  should_resize: &mut Option<Vector2<f32>>, should_next_scene: &mut bool, delta_time: f32);
+  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool,  should_resize: &mut Option<(Vector2<f32>, bool)>, should_next_scene: &mut bool, delta_time: f32);
   fn check_if_needs_reenabling(&mut self);
   
-  fn update(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<Vector2<f32>>, should_next_scene: &mut bool, _delta_time: f32) {
+  fn update(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<(Vector2<f32>, bool)>, should_next_scene: &mut bool, _delta_time: f32) {
     self.update_inner_uis(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, should_next_scene, _delta_time);
     
     if !self.data().enabled {

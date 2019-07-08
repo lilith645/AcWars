@@ -48,8 +48,8 @@ fn fps_overlay(draw_calls: &mut Vec<DrawCall>, dimensions: Vector2<f32>, fps: f6
 }
 
 fn main() {
-  let mut graphics = CoreMaat::new("Maat Editor".to_string(), (MAJOR) << 22 | (MINOR) << 12 | (PATCH), 1280.0, 1080.0, true);
-  
+  let mut graphics = CoreMaat::new("AcWars".to_string(), (MAJOR) << 22 | (MINOR) << 12 | (PATCH), 1280.0, 1080.0, true);
+  graphics.set_icon("./resources/textures/entities/Sun_glasses.png".to_string());
   graphics.preload_font(String::from("Arial"),
                         String::from("./resources/fonts/TimesNewRoman.png"),
                         include_bytes!("../resources/fonts/TimesNewRoman.fnt"));
@@ -192,8 +192,8 @@ fn main() {
     
     if done { break; }
     
-    if let Some(new_size) = game.should_force_window_resize() {
-      graphics.force_window_resize(new_size);
+    if let Some((new_size, fullscreen)) = game.should_force_window_resize() {
+      graphics.force_window_resize(new_size, fullscreen);
     }
   }
   
