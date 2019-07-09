@@ -1,11 +1,10 @@
 use crate::modules::areas::{Area, AreaData};
 use crate::modules::entities::{FullEntity, Astroid};
-use crate::modules::controllers::{IdleAi, FloatingAi};
-use crate::modules::abilities::{Ability, SingleShot, Shatter, SunDamage};
+use crate::modules::controllers::{FloatingAi};
 
 use crate::cgmath::Vector2;
 
-use std::sync::Arc;
+
 
 #[derive(Clone)]
 pub struct AstroidField {
@@ -38,7 +37,7 @@ impl Area for AstroidField {
     &mut self.data
   }
   
-  fn update_area(&mut self, delta_time: f32) {
+  fn update_area(&mut self, _delta_time: f32) {
     
   }
 }

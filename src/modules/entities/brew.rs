@@ -1,8 +1,5 @@
-use maat_graphics::math;
-
 use crate::modules::entities::sections::{Hull, Thruster, WeaponMount};
 use crate::modules::entities::{Entity, EntityData};
-use crate::modules::projectiles::Projectile;
 
 use crate::cgmath::Vector2;
 
@@ -23,11 +20,11 @@ impl Brew {
                         .with_max_velocity(500.0)
                         .with_inertia(0.33)
                         .with_health(100.0)
-                        .with_ship_section(Box::new(Hull::new()))
-                        .with_ship_section(Box::new(Thruster::new()))
-                        .with_ship_section(Box::new(WeaponMount::new()))
-                        .with_ship_section(Box::new(WeaponMount::new()))
-                        .with_ship_section(Box::new(WeaponMount::new()))
+                        .with_ship_section(Box::new(Hull::new(Vector2::new(10.0, 150.0), Vector2::new(150.0, 150.0))))
+                        .with_ship_section(Box::new(Thruster::new(Vector2::new(10.0, -240.0), Vector2::new(150.0, 50.0))))
+                        .with_ship_section(Box::new(WeaponMount::new(Vector2::new(10.0, -180.0), Vector2::new(50.0, 50.0))))
+                        .with_ship_section(Box::new(WeaponMount::new(Vector2::new(-140.0, -45.0), Vector2::new(50.0, 50.0))))
+                        .with_ship_section(Box::new(WeaponMount::new(Vector2::new(140.0, -45.0), Vector2::new(50.0, 50.0))))
     }
   }
   

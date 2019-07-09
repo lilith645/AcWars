@@ -1,11 +1,9 @@
 use crate::modules::areas::{Area, AreaData};
 use crate::modules::entities::{FullEntity, Brew};
-use crate::modules::controllers::{IdleAi, AbilitySpamAi};
-use crate::modules::abilities::{Ability, SingleShot, Shatter, SunDamage};
+use crate::modules::controllers::{AbilitySpamAi};
+use crate::modules::abilities::{SingleShot};
 
 use crate::cgmath::Vector2;
-
-use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct BenchmarkArea {
@@ -41,7 +39,7 @@ impl Area for BenchmarkArea {
     &mut self.data
   }
   
-  fn update_area(&mut self, delta_time: f32) {
+  fn update_area(&mut self, _delta_time: f32) {
     
   }
 }

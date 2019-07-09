@@ -1,26 +1,21 @@
 use maat_graphics::{DrawCall, math};
 use maat_graphics::camera::OrthoCamera;
 use maat_graphics::imgui;
-use maat_graphics::ThreadPool;
-
-use maat_gui;
 
 use crate::modules::scenes::Scene;
 use crate::modules::scenes::SceneData;
 
-use crate::modules::buffs::{Buff, BoxBuff};
-use crate::modules::entities::{Entity, BoxEntity, MutexEntity, Ship, Brew};
-use crate::modules::projectiles::{Projectile, BoxProjectile, MutexProjectile};
-use crate::modules::controllers::{EntityController, AbilitySpamAi};
-use crate::modules::areas::{Area, BoxArea, BenchmarkArea};
+use crate::modules::buffs::{BoxBuff};
+use crate::modules::entities::{MutexEntity, Ship};
+use crate::modules::projectiles::{MutexProjectile};
+use crate::modules::areas::{BoxArea, BenchmarkArea};
 use crate::modules::player;
-use crate::modules::ui::{Ui,BoxUi, PauseUi, AbilityUi};
+use crate::modules::ui::{BoxUi, PauseUi, AbilityUi};
 
-use crate::cgmath::{Vector2, Vector4, InnerSpace};
+use crate::cgmath::{Vector2, Vector4};
 
 use hlua::Lua;
 
-use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 
 use crate::modules::spatial_hash::SpatialHash;
@@ -28,7 +23,7 @@ use crate::modules::kdtree::Node;
 
 enum UiIndex {
   PauseUi,
-  AbilityUi,
+  _AbilityUi,
 }
 
 impl UiIndex {
@@ -51,7 +46,7 @@ pub struct BenchmarkScreen {
   escape_pressed_last_frame: bool, 
   spatial_hash: Arc<Mutex<SpatialHash>>,
   collision_checks: u64,
-  kdtree: Option<Box<Node>>,
+  _kdtree: Option<Box<Node>>,
   total_delta_time: f32,
   virtual_input: Vec<f32>,
   all_fps: Vec<f64>,
@@ -76,7 +71,7 @@ impl BenchmarkScreen {
       escape_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
       collision_checks: 0,
-      kdtree: None,
+      _kdtree: None,
       total_delta_time: 0.0,
       virtual_input: (0..100).into_iter().map(|x| x as f32*0.5).collect::<Vec<f32>>(),
       all_fps: Vec::new(),
@@ -100,7 +95,7 @@ impl BenchmarkScreen {
       escape_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
       collision_checks: 0,
-      kdtree: None,
+      _kdtree: None,
       total_delta_time: 0.0,
       virtual_input: (0..100).into_iter().map(|x| x as f32*0.5).collect::<Vec<f32>>(),
       all_fps,
@@ -207,7 +202,7 @@ impl BenchmarkScreen {
   
   pub fn spatial_hash_collision(&self) {
     
-    let mut all_entities: Vec<MutexEntity> = Vec::new();
+    let _all_entities: Vec<MutexEntity> = Vec::new();
     
     let mut spatial_hash = self.spatial_hash.lock().unwrap();
     spatial_hash.clear();
@@ -393,7 +388,7 @@ impl Scene for BenchmarkScreen {
       let mut ship = self.ship.lock().unwrap();
       self.input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
       
-      let (mut buffs, mut new_projectiles) = ship.update(delta_time);
+      let (buffs, mut new_projectiles) = ship.update(delta_time);
       
       let mut offset = 0;
       for i in 0..self.buffs.len() {
@@ -428,7 +423,7 @@ impl Scene for BenchmarkScreen {
           break;
         }
         
-        let mut projectile_should_exist = true;
+        let projectile_should_exist;
         {
           let mut projectile = self.projectiles[i-offset].lock().unwrap();
           //self.projectiles[i-offset].update(delta_time);
@@ -446,7 +441,7 @@ impl Scene for BenchmarkScreen {
     
     // Check collisions 
     // Spatial collision stuff
-    let total_collision_checks = self.collision_checks;
+    let _total_collision_checks = self.collision_checks;
     self.collision_checks = 0;
     self.spatial_hash_collision();
     
@@ -479,7 +474,7 @@ impl Scene for BenchmarkScreen {
     }
     
     for mutex_projectile in &self.projectiles {
-      let mut projectile = mutex_projectile.lock().unwrap();
+      let projectile = mutex_projectile.lock().unwrap();
       projectile.draw(draw_calls);
     }
     
@@ -529,7 +524,7 @@ impl Scene for BenchmarkScreen {
         temp_low.to_string()
       };
       let mut highest_fps = self.all_fps[self.all_fps.len()-1].to_string();
-      let mut median_index = (self.all_fps.len() as f32*0.5).floor() as usize;
+      let median_index = (self.all_fps.len() as f32*0.5).floor() as usize;
       let  mut fps = self.all_fps[median_index].to_string();
       fps.truncate(6);
       lowest_fps.truncate(6);

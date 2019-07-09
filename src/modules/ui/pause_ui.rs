@@ -15,21 +15,14 @@ impl UiIndex {
   }
 }
 
-enum WidgetIndex {
-  Background,
-  Resume,
-  ResumeText,
-  Options,
-  OptionsText,
-  Quit,
-  QuiText,
-}
 
-impl WidgetIndex {
-  pub fn n(self) -> usize {
-    self as usize
-  }
-}
+const BACKGROUND: usize = 0;
+const RESUME: usize =  1;
+//const RESUME_TEXT: usize = 2;
+const OPTIONS: usize = 3;
+//const OPTIONS_TEXT: usize = 4;
+const QUIT: usize =  5;
+//const QUIT_TEXT: usize =  6;
 
 #[derive(Clone)]
 pub struct PauseUi {
@@ -48,20 +41,20 @@ impl PauseUi {
     let button_height = 40.0;
     let button_colour = Vector4::new(0.8, 0.8, 0.8, 1.0);
     let font =  "Arial".to_string();
-    let background = Box::new(Image::new(positions[WidgetIndex::Background.n()], Vector2::new(pause_width, pause_height))
+    let background = Box::new(Image::new(positions[BACKGROUND], Vector2::new(pause_width, pause_height))
                                      .with_primary_colour(Vector4::new(0.2, 0.2, 0.3, 1.0)));
     
-    let resume_position = positions[WidgetIndex::Resume.n()];
+    let resume_position = positions[RESUME];
     let resume_text: Box<Widget> = Box::new(Text::new(resume_position, 64.0, &font, &"Resume".to_string()).center_text());
     let resume = Box::new(Button::new(resume_position, Vector2::new(button_width, button_height))
                                      .with_primary_colour(button_colour));
     
-    let options_position = positions[WidgetIndex::Options.n()];
+    let options_position = positions[OPTIONS];
     let options_text: Box<Widget> = Box::new(Text::new(options_position, 64.0, &font, &"Options".to_string()).center_text());
     let options = Box::new(Button::new(options_position, Vector2::new(button_width, button_height))
                                      .with_primary_colour(button_colour));
                                      
-    let quit_position = positions[WidgetIndex::Quit.n()];
+    let quit_position = positions[QUIT];
     let quit_text: Box<Widget> = Box::new(Text::new(quit_position, 64.0, &font, &"Quit".to_string()).center_text());
     let quit = Box::new(Button::new(quit_position, Vector2::new(button_width, button_height))
                                      .with_primary_colour(button_colour));
@@ -114,19 +107,19 @@ impl Ui for PauseUi {
     }
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, mut should_close: &mut bool, _should_resize: &mut Option<(Vector2<f32>, bool)>, should_next_scene: &mut bool, _delta_time: f32) {
+  fn update_ui(&mut self, _mouse_pos: Vector2<f32>, _left_mouse: bool, _escape_pressed: bool, window_size: Vector2<f32>, _should_close: &mut bool, _should_resize: &mut Option<(Vector2<f32>, bool)>, should_next_scene: &mut bool, _delta_time: f32) {
     
     let new_positions = PauseUi::realign_widget_positions(window_size,
-                                                          self.data().widgets[WidgetIndex::Background.n()].size().y);
+                                                          self.data().widgets[BACKGROUND].size().y);
     for i in 0..new_positions.len() {
       self.mut_data().widgets[i].set_position(new_positions[i]);
     }
     
-    if self.data().widgets[WidgetIndex::Resume.n()].pressed() {
+    if self.data().widgets[RESUME].pressed() {
       self.mut_data().enabled = false;
     }
     
-    if self.data().widgets[WidgetIndex::Options.n()].pressed() {
+    if self.data().widgets[OPTIONS].pressed() {
       if let Some(ui) = &mut self.mut_data().uis {
         ui[UiIndex::OptionsUi.n()].enable();
         self.mut_data().enabled = false;
@@ -134,9 +127,13 @@ impl Ui for PauseUi {
       }
     }
     
-    if self.data().widgets[WidgetIndex::Quit.n()].pressed() {
+    if self.data().widgets[QUIT].pressed() {
       *should_next_scene = true;
     }
+  }
+  
+  fn custom_draw(&self, _draw_calls: &mut Vec<DrawCall>) {
+    
   }
 }
 

@@ -1,10 +1,7 @@
-use maat_graphics::math;
 
 use crate::modules::projectiles::{Projectile, ProjectileData};
 
-use std::f32::consts::PI;
-
-use crate::cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2};
 
 #[derive(Clone)]
 pub struct Aoe {
@@ -13,7 +10,7 @@ pub struct Aoe {
 
 impl Aoe {
   pub fn new(pos: Vector2<f32>, radius: f32) -> Aoe {
-    let mut size = Vector2::new(radius, radius);//Vector2::new(50.0, 500.0);
+    let size = Vector2::new(radius, radius);//Vector2::new(50.0, 500.0);
     
     let position = pos-size*0.5;
     let texture = "Aoe".to_string();

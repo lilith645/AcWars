@@ -1,10 +1,10 @@
 use maat_graphics::math;
 
 use crate::modules::abilities::{Ability, AbilityData};
-use crate::modules::entities::{Entity, BoxEntity, Hostility};
+use crate::modules::entities::{BoxEntity, Hostility};
 use crate::modules::projectiles::{Projectile, BoxProjectile, Ftpl};
 
-use crate::cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2};
 
 #[derive(Clone)]
 pub struct Shatter {
@@ -36,15 +36,15 @@ impl Ability for Shatter {
     let ship_pos = ship.position();
     let ship_size = ship.size();
     
-    let proj_dir = math::normalise_vector2((target-ship_pos));
+    let proj_dir = math::normalise_vector2(target-ship_pos);
     
     let num_projectiles = 5;
     
     let mut projectiles = Vec::new();
     
-    let mut arc = 90.0;
+    let arc = 90.0;
     
-    let mut arc_increment = arc/num_projectiles as f32;
+    let arc_increment = arc/num_projectiles as f32;
     
     // middle projectile
     projectiles.push(Box::new(Ftpl::new(ship_pos, ship_size*0.5, proj_dir)));

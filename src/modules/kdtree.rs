@@ -16,21 +16,21 @@ pub struct Node {
 }
 
 impl Node {
-  pub fn get_depth_index(&self, position: Vector2<f32>, depth: u32, mut index: (i32, i32)) -> (i32, i32) {
+  pub fn _get_depth_index(&self, position: Vector2<f32>, depth: u32, mut index: (i32, i32)) -> (i32, i32) {
     let k = 2;
     let axis = depth%k;
     if axis == 0 {
       if position.x < self.location.x {
         if let Some(child) = &self.l_child {
           index.0 += depth as i32+1;
-          child.get_depth_index(position, depth+1, index)
+          child._get_depth_index(position, depth+1, index)
         } else {
           index
         }
       } else {
         if let Some(child) = &self.r_child {
           index.1 += depth as i32+1;
-          child.get_depth_index(position, depth+1, index)
+          child._get_depth_index(position, depth+1, index)
         } else {
           index
         }
@@ -39,14 +39,14 @@ impl Node {
       if position.y < self.location.y {
         if let Some(child) = &self.l_child {
           index.0 += depth as i32+1;
-          child.get_depth_index(position, depth+1, index)
+          child._get_depth_index(position, depth+1, index)
         } else {
           index
         }
       } else {
         if let Some(child) = &self.r_child {
           index.1 += depth as i32+1;
-          child.get_depth_index(position, depth+1, index)
+          child._get_depth_index(position, depth+1, index)
         } else {
           index
         }
@@ -54,7 +54,7 @@ impl Node {
     }
   }
   
-  pub fn get_boundries(&self) -> Vector4<f32> {
+  pub fn _get_boundries(&self) -> Vector4<f32> {
     let mut boundry = Vector4::new(0.0, 0.0, 1.0, 1.0);
     
     if let Some(min_width) = &self.min_width {
@@ -83,7 +83,7 @@ impl Node {
     boundry
   }
   
-  pub fn create_kdtree(mut positions: Vec<Vector2<f32>>, goal_number: usize, depth: u32, max_depth: u32) -> Option<Box<Node>> {
+  pub fn _create_kdtree(mut positions: Vec<Vector2<f32>>, goal_number: usize, depth: u32, max_depth: u32) -> Option<Box<Node>> {
     if positions.len() < goal_number || depth > max_depth {
       return None;
     }
@@ -111,8 +111,8 @@ impl Node {
     
     Some(Box::new(Node {
       location: second_half[0].clone(),
-      l_child: Node::create_kdtree(first_half.to_vec(), goal_number, depth+1, max_depth),
-      r_child: Node::create_kdtree(second_half.to_vec(), goal_number, depth+1, max_depth),
+      l_child: Node::_create_kdtree(first_half.to_vec(), goal_number, depth+1, max_depth),
+      r_child: Node::_create_kdtree(second_half.to_vec(), goal_number, depth+1, max_depth),
       min_width,
       max_width,
       min_height,
@@ -120,7 +120,7 @@ impl Node {
     }))
   }
   
-  pub fn draw_kdtree(mut nodes: Option<Box<Node>>, depth: i32, draw_calls: &mut Vec<DrawCall>, parent_bound: f32, width: f32, height: f32) {
+  pub fn _draw_kdtree(nodes: Option<Box<Node>>, depth: i32, draw_calls: &mut Vec<DrawCall>, parent_bound: f32, width: f32, height: f32) {
     if nodes.is_none() || depth == 3 {
       return;
     }
@@ -184,7 +184,7 @@ impl Node {
     }
     
     
-    Node::draw_kdtree(temp_node.l_child.clone(), depth+1, draw_calls, new_parent_bound, width, height);
-    Node::draw_kdtree(temp_node.r_child, depth+1, draw_calls, new_parent_bound, width, height);
+    Node::_draw_kdtree(temp_node.l_child.clone(), depth+1, draw_calls, new_parent_bound, width, height);
+    Node::_draw_kdtree(temp_node.r_child, depth+1, draw_calls, new_parent_bound, width, height);
   }
 }

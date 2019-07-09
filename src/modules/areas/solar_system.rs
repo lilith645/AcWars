@@ -1,11 +1,11 @@
 use crate::modules::areas::{Area, AreaData};
 use crate::modules::entities::{FullEntity, Sun, Astroid, Brew};
 use crate::modules::controllers::{IdleAi, AbilitySpamAi};
-use crate::modules::abilities::{Ability, SingleShot, Shatter, SunDamage, Haste, ProjectileSpeed};
+use crate::modules::abilities::{Ability, SingleShot, SunDamage, Haste, ProjectileSpeed};
 
 use crate::cgmath::Vector2;
 
-use std::sync::Arc;
+
 
 #[derive(Clone)]
 pub struct SolarSystem {
@@ -53,7 +53,7 @@ impl Area for SolarSystem {
     &mut self.data
   }
   
-  fn update_area(&mut self, delta_time: f32) {
+  fn update_area(&mut self, _delta_time: f32) {
     
   }
 }

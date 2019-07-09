@@ -1,8 +1,4 @@
-use maat_graphics::math;
-
-use crate::modules::entities::sections::{Hull, Wing, Thruster, WeaponMount};
 use crate::modules::entities::{Entity, EntityData};
-use crate::modules::projectiles::Projectile;
 
 use crate::cgmath::Vector2;
 

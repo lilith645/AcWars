@@ -4,7 +4,7 @@ use crate::modules::projectiles::{Projectile, ProjectileData};
 
 use std::f32::consts::PI;
 
-use crate::cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2};
 
 #[derive(Clone)]
 pub struct LaserBeam {
@@ -13,7 +13,7 @@ pub struct LaserBeam {
 
 impl LaserBeam {
   pub fn new(center_pos: Vector2<f32>, offset: Vector2<f32>, direction: Vector2<f32>) -> LaserBeam {
-    let mut size = Vector2::new(50.0, 500.0);//Vector2::new(50.0, 500.0);
+    let size = Vector2::new(50.0, 500.0);//Vector2::new(50.0, 500.0);
     
     let position = Vector2::new(center_pos.x+offset.x*direction.x+size.y*0.5*direction.x, 
                                 center_pos.y+offset.y*direction.y+size.y*0.5*direction.y);
@@ -52,7 +52,7 @@ impl Projectile for LaserBeam {
     let mut laser_circles = Vec::new();
     laser_circles.push((Vector2::new(0.0, 0.0), radius));
     
-    let pos = self.data().position;
+    let _pos = self.data().position;
     let rotation = self.data().rotation+90.0;
     
     let num_circles = (goal / radius).floor() as i32 -1;

@@ -6,8 +6,8 @@ mod ability_spam_ai;
 mod idle_ai;
 mod floating_ai;
 
-use crate::modules::abilities::{Ability, BoxAbility};
-use crate::modules::entities::{Entity, BoxEntity, MutexEntity};
+use crate::modules::abilities::{BoxAbility};
+use crate::modules::entities::{BoxEntity};
 
 use crate::cgmath::Vector2;
 

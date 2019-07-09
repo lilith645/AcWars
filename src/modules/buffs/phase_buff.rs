@@ -1,10 +1,10 @@
-use maat_graphics::math;
+
 
 use crate::modules::buffs::{Buff, BuffData};
 
-use crate::modules::entities::{Entity, BoxEntity};
+use crate::modules::entities::{BoxEntity};
 
-use crate::cgmath::{Vector2, InnerSpace};
+
 
 #[derive(Clone)]
 pub struct PhaseBuff {
@@ -33,7 +33,7 @@ impl Buff for PhaseBuff {
     &mut self.data
   }
   
-  fn reapply_buff(&self, entity: &mut BoxEntity) {
+  fn reapply_buff(&self, _entity: &mut BoxEntity) {
     
   }
   

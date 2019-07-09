@@ -62,6 +62,7 @@ impl Scene for LoadScreen {
     let (width, height) = (dim.x as f32, dim.y as f32);
     
     if self.first_loop {
+      draw_calls.push(DrawCall::load_texture("Grid".to_string()));
       // ships
       draw_calls.push(DrawCall::load_texture("Bulbz".to_string()));
       draw_calls.push(DrawCall::load_texture("Brew".to_string()));
@@ -89,7 +90,7 @@ impl Scene for LoadScreen {
       draw_calls.push(DrawCall::load_texture("RightArrow".to_string()));
     }
     
-    draw_calls.push(DrawCall::set_texture_scale(1.0));
+   // draw_calls.push(DrawCall::set_texture_scale(1.0));
     
     draw_calls.push(
         DrawCall::draw_coloured(Vector2::new(width*0.5, height*0.5),

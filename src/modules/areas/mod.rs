@@ -7,10 +7,8 @@ mod astroid_field;
 mod benchmark;
 
 use maat_graphics::DrawCall;
-use crate::modules::projectiles::{Projectile, BoxProjectile};
-use crate::modules::entities::{MutexEntity, FullEntity, Entity, BoxEntity, Brew};
-use crate::modules::controllers::AbilitySpamAi;
-use crate::modules::abilities::{Ability, SingleShot, ProjectileSpeed, Haste};
+use crate::modules::projectiles::{BoxProjectile};
+use crate::modules::entities::{MutexEntity, FullEntity, BoxEntity};
 
 use crate::cgmath::Vector2;
 
@@ -138,9 +136,9 @@ pub trait Area: AreaClone {
         break;
       }
       
-      let mut should_exist = true;
+      let should_exist;
       
-      let mut object_buffs = Vec::new();
+      let mut object_buffs;
       {
         let mut entity = self.data().entities[i-offset].entity.lock().unwrap();
         should_exist = entity.should_exist();

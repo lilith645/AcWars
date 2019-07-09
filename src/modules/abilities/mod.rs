@@ -30,8 +30,8 @@ mod no_ability;
 
 use maat_graphics::DrawCall;
 
-use crate::modules::entities::{Entity, BoxEntity, Hostility};
-use crate::modules::projectiles::{Projectile, BoxProjectile};
+use crate::modules::entities::{BoxEntity, Hostility};
+use crate::modules::projectiles::{BoxProjectile};
 
 use crate::cgmath::{Vector2, Vector4};
 
@@ -105,6 +105,10 @@ pub trait Ability: AbilityClone {
     if self.data().time_left <= 0.0 {
       self.mut_data().time_left = 0.0;
     }
+  }
+  
+  fn texture(&self) -> String {
+    self.data().texture.to_string()
   }
   
   fn ability_type(&self) -> &AbilityType {

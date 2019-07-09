@@ -6,9 +6,6 @@ use maat_gui::widgets::{Widget, Image, Text, Button, CheckBox, DropdownBox};
 
 use crate::cgmath::{Vector2, Vector4};
 
-const BUTTON_WIDTH: f32 = 120.0;
-const BUTTON_HEIGHT: f32 = 40.0;
-
 #[derive(Clone)]
 pub struct OptionsUi {
   data: UiData,
@@ -16,31 +13,23 @@ pub struct OptionsUi {
   resolution_indexs: Vec<usize>,
 }
 
-enum WidgetIndex {
-  Background,
-  Vsync,
-  VsyncText,
-  Fullscreen,
-  FullscreenText,
-  Msaa,
-  MsaaText,
-  Resolution,
-  ResolutionText,
-  Save,
-  SaveText,
-  Return,
-  ReturnText,
-}
-
-impl WidgetIndex {
-  pub fn n(self) -> usize {
-    self as usize
-  }
-}
+//const BACKGROUND: usize = 0;
+const VSYNC: usize =  1;
+//const VSYNC_TEXT: usize = 2;
+const FULLSCREEN: usize = 3;
+//const FULLSCREEN_TEXT: usize = 4;
+const MSAA: usize =  5;
+//const MSAA_TEXT: usize =  6;
+const RESOLUTION: usize = 7;
+//const RESOLUTION_TEXT: usize =  8;
+const SAVE: usize =  9;
+//const SAVE_TEXT: usize =  10;
+const RETURN: usize =  11;
+//const RETURN_TEXT: usize =  12;
 
 impl OptionsUi {
   pub fn new(window_size: Vector2<f32>) -> OptionsUi {
-    let iwindow_size = Vector2::new(window_size.x as i32, window_size.y as i32);
+    let _iwindow_size = Vector2::new(window_size.x as i32, window_size.y as i32);
     let settings = Settings::load();
     let vsync_setting = settings.vsync_enabled();
     let fullscreen_setting = settings.is_fullscreen();
@@ -144,7 +133,7 @@ impl OptionsUi {
     
     let checkbox_size = OptionsUi::checkbox_size(window_size);
     let text = OptionsUi::large_text_size(window_size);
-    let mut fullscreen = Box::new(CheckBox::new(pos, checkbox_size)
+    let fullscreen = Box::new(CheckBox::new(pos, checkbox_size)
                                   .with_primary_colour(primary_colour)
                                   .with_secondary_colour(secondary_colour));
     let fullscreen_text = Box::new(Text::new(text_pos, text, &font, &"Fullscreen".to_string()));
@@ -335,7 +324,7 @@ impl OptionsUi {
     let mut selected_index = 0;
     
     let mut i = 0;
-    for ((width, height, ratio)) in Settings::resolutions().iter() {
+    for (width, height, ratio) in Settings::resolutions().iter() {
       if *width <= max_resolution[0] && *height <= max_resolution[1] {
         resolutions.push(width.to_string().to_owned() + &"x" + &height.to_string() + " " + ratio);
         index_references.push(i);
@@ -416,7 +405,7 @@ impl Ui for OptionsUi {
     
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, should_close: &mut bool, should_resize: &mut Option<(Vector2<f32>, bool)>, _should_next_scene: &mut bool, _delta_time: f32) {
+  fn update_ui(&mut self, _mouse_pos: Vector2<f32>, _left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, _should_close: &mut bool, should_resize: &mut Option<(Vector2<f32>, bool)>, _should_next_scene: &mut bool, _delta_time: f32) {
     let new_positions = OptionsUi::realign_widget_positions(window_size);
     let new_sizes = OptionsUi::realign_widget_sizes(window_size);
     for i in 0..new_positions.len() {
@@ -424,15 +413,15 @@ impl Ui for OptionsUi {
       self.mut_data().widgets[i].set_size(new_sizes[i]);
     }
     
-    if escape_pressed || self.data().widgets[WidgetIndex::Return.n()].pressed() {
+    if escape_pressed || self.data().widgets[RETURN].pressed() {
       self.disable();
     }
     
-    if self.data().widgets[WidgetIndex::Save.n()].pressed() {
-      self.settings.set_vsync(self.data().widgets[WidgetIndex::Vsync.n()].activated());
-      self.settings.enable_fullscreen(self.data().widgets[WidgetIndex::Fullscreen.n()].activated());
+    if self.data().widgets[SAVE].pressed() {
+      self.settings.set_vsync(self.data().widgets[VSYNC].activated());
+      self.settings.enable_fullscreen(self.data().widgets[FULLSCREEN].activated());
       let msaa = {
-        match self.data().widgets[WidgetIndex::Msaa.n()].text().as_ref() {
+        match self.data().widgets[MSAA].text().as_ref() {
           "x2" => {
             2
           },
@@ -451,7 +440,7 @@ impl Ui for OptionsUi {
         }
       };
       let resolution: Vector2<f32> = {
-        let mut index = self.data().widgets[WidgetIndex::Resolution.n()].external_option_value();
+        let index = self.data().widgets[RESOLUTION].external_option_value();
         
         let i = self.resolution_indexs[index as usize];
         let resolutions = Settings::resolutions();
@@ -459,7 +448,7 @@ impl Ui for OptionsUi {
         Vector2::new(resolutions[i].0 as f32, resolutions[i].1 as f32)
       };
       
-      let is_fullscreen = self.data().widgets[WidgetIndex::Fullscreen.n()].activated();
+      let is_fullscreen = self.data().widgets[FULLSCREEN].activated();
       *should_resize = Some((resolution, is_fullscreen));
       
       self.settings.set_resolution(Vector2::new(resolution.x as i32, resolution.y as i32));
@@ -467,6 +456,10 @@ impl Ui for OptionsUi {
       self.settings.save();
       println!("settings svaed");
     }
+  }
+  
+  fn custom_draw(&self, _draw_calls: &mut Vec<DrawCall>) {
+    
   }
 }
 

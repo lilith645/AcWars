@@ -1,6 +1,5 @@
 use crate::modules::entities::sections::{Hull, Wing, Thruster, WeaponMount};
 use crate::modules::entities::{Entity, EntityData};
-use crate::modules::projectiles::Projectile;
 
 use crate::cgmath::Vector2;
 
@@ -19,12 +18,12 @@ impl Ship {
                         .with_max_velocity(800.0)
                         .with_inertia(0.33)
                         .with_health(500.0)
-                        .with_ship_section(Box::new(Hull::new()))
-                        .with_ship_section(Box::new(Wing::new()))
-                        .with_ship_section(Box::new(Wing::new()))
-                        .with_ship_section(Box::new(Thruster::new()))
-                        .with_ship_section(Box::new(Thruster::new()))
-                        .with_ship_section(Box::new(WeaponMount::new())),
+                        .with_ship_section(Box::new(Hull::new(Vector2::new(0.0, 50.0), Vector2::new(100.0, 200.0))))
+                        .with_ship_section(Box::new(Wing::new(Vector2::new(-125.0, 100.0), Vector2::new(75.0, 50.0))))
+                        .with_ship_section(Box::new(Wing::new(Vector2::new(125.0, 100.0), Vector2::new(75.0, 50.0))))
+                        .with_ship_section(Box::new(Thruster::new(Vector2::new(-50.0, -100.0), Vector2::new(50.0, 50.0))))
+                        .with_ship_section(Box::new(Thruster::new(Vector2::new(50.0, -100.0), Vector2::new(50.0, 50.0))))
+                        .with_ship_section(Box::new(WeaponMount::new(Vector2::new(0.0, 200.0), Vector2::new(50.0, 50.0)))),
     }
   }
   

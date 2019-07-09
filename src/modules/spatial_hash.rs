@@ -1,13 +1,9 @@
-use maat_graphics::DrawCall;
-
-use crate::modules::entities::{Entity, MutexEntity};
-use crate::modules::projectiles::{Projectile, MutexProjectile, BoxProjectile};
+use crate::modules::entities::{MutexEntity};
+use crate::modules::projectiles::{BoxProjectile};
 
 use crate::cgmath::{Vector2,Vector4};
 
 use std::sync::Arc;
-use std::sync::Mutex;
-
 
 struct Content {
   pub index: (i32, i32),
@@ -85,17 +81,6 @@ impl ObjectContainer {
     
     return_objects
   }
-  
-  pub fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
-    for content in &self.contents {
-      let colour = Vector4::new((content.index.0 as f32+100.0)/255.0, (content.index.1 as f32+100.0)/255.0, 0.0, 1.0);
-      for mutex_object in &content.objects {
-        let object = mutex_object.lock().unwrap();
-        let pos = object.position();
-        draw_calls.push(DrawCall::draw_coloured(pos, Vector2::new(200.0, 200.0), colour, 0.0));
-      }
-    }
-  }
 }
 
 pub struct SpatialHash {
@@ -121,7 +106,7 @@ impl SpatialHash {
   
   pub fn insert_object_for_point(&mut self, mutex_object: MutexEntity) {
     let object = mutex_object.lock().unwrap();
-    let mut position = object.position();
+    let position = object.position();
     let offset = object.size().x.max(object.size().y)*0.5;
     let min = position - Vector2::new(offset, offset);
     let max = position + Vector2::new(offset, offset);
@@ -137,7 +122,7 @@ impl SpatialHash {
   pub fn retrieve_objects(&self, object: &BoxProjectile) -> Vec<MutexEntity> {
     let mut objects = Vec::new();
     
-    let mut position = object.position();
+    let position = object.position();
     let offset = object.size().x.max(object.size().y)*0.5;
     let min = position - Vector2::new(offset, offset);
     let max = position + Vector2::new(offset, offset);
@@ -156,9 +141,5 @@ impl SpatialHash {
   
   pub fn retrieve_possible_entity_collisions(&self) -> Vec<Vec<MutexEntity>> {
     self.contents.retrieve_colliding_objects()
-  }
-  
-  pub fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
-    self.contents.draw(draw_calls);
   }
 }

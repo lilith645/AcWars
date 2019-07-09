@@ -1,34 +1,28 @@
 use maat_graphics::DrawCall;
 use maat_graphics::camera::OrthoCamera;
 use maat_graphics::imgui;
-use maat_graphics::ThreadPool;
-
-use maat_gui;
 
 use crate::modules::scenes::{Scene, SceneData, ShipSelectScreen};
 
-use crate::modules::buffs::{Buff, BoxBuff};
-use crate::modules::entities::{Entity, MutexEntity, BoxEntity, Ship, Brew, Astroid};
-use crate::modules::projectiles::{Projectile, BoxProjectile, MutexProjectile};
-use crate::modules::controllers::{EntityController, AbilitySpamAi};
-use crate::modules::areas::{Area, BoxArea, SolarSystem, AstroidField};
+use crate::modules::buffs::{BoxBuff};
+use crate::modules::entities::{MutexEntity, BoxEntity};
+use crate::modules::projectiles::{BoxProjectile, MutexProjectile};
+use crate::modules::areas::{BoxArea, SolarSystem, AstroidField};
 use crate::modules::player;
 use crate::modules::ui::{Ui,BoxUi, PauseUi, AbilityUi, ShipModuleViewer};
 
-use crate::cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2};
 
 use hlua::Lua;
 
-use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 
 use crate::modules::spatial_hash::SpatialHash;
-use crate::modules::kdtree::Node;
 
 enum UiIndex {
   ModuleViewer,
   PauseUi,
-  AbilityUi,
+  _AbilityUi,
 }
 
 impl UiIndex {
@@ -51,8 +45,6 @@ pub struct BattleScreen {
   escape_pressed_last_frame: bool, 
   i_pressed_last_frame: bool, 
   spatial_hash: Arc<Mutex<SpatialHash>>,
-  collision_checks: u64,
-  kdtree: Option<Box<Node>>,
 }
 
 impl BattleScreen {
@@ -62,13 +54,15 @@ impl BattleScreen {
     
     ship.set_position(Vector2::new(540.0, 600.0));
     
-    let mut module_viewer = ShipModuleViewer::new(window_size);
+    let ship = Arc::new(Mutex::new(ship));
+    
+    let mut module_viewer = ShipModuleViewer::new(window_size, &ship);
     module_viewer.disable();
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
       areas: vec!(solar_system,astroid_field),
       input: player::Input::new(),
-      ship: Arc::new(Mutex::new(ship)),
+      ship,
       buffs: Vec::new(),
       projectiles: Vec::new(),
       zoom: 0.75,
@@ -78,8 +72,6 @@ impl BattleScreen {
       escape_pressed_last_frame: false,
       i_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
-      collision_checks: 0,
-      kdtree: None,
     }
   }
   
@@ -98,15 +90,10 @@ impl BattleScreen {
       escape_pressed_last_frame: false,
       i_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
-      collision_checks: 0,
-      kdtree: None,
     }
   }
   
   pub fn spatial_hash_collision(&self) {
-    
-    let mut all_entities: Vec<MutexEntity> = Vec::new();
-    
     let mut spatial_hash = self.spatial_hash.lock().unwrap();
     spatial_hash.clear();
     for area in &self.areas {
@@ -158,7 +145,7 @@ impl BattleScreen {
     spatial_hash.clear();
   }
   
-  pub fn brute_force_collision(&mut self) {
+  pub fn _brute_force_collision(&mut self) {
     let mut all_entities: Vec<MutexEntity> = Vec::new();
     
     for area in &self.areas {
@@ -180,7 +167,6 @@ impl BattleScreen {
         let mut enemy = enemy_mutex.lock().unwrap();
         if projectile.can_hit(enemy.hostility()) {
           if enemy.should_exist() {
-            self.collision_checks += 1;
             projectile.collide_with(&mut *enemy);
           }
         }
@@ -298,7 +284,7 @@ impl BattleScreen {
     let mut ship = self.ship.lock().unwrap();
     self.input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
     
-    let (mut buffs, mut new_projectiles) = ship.update(delta_time);
+    let (buffs, new_projectiles) = ship.update(delta_time);
     
     let mut offset = 0;
     for i in 0..self.buffs.len() {
@@ -348,7 +334,7 @@ impl BattleScreen {
         break;
       }
       
-      let mut projectile_should_exist = true;
+      let projectile_should_exist;
       {
         let mut projectile = self.projectiles[i-offset].lock().unwrap();
         projectile.update(delta_time);
@@ -390,12 +376,7 @@ impl Scene for BattleScreen {
     self.mut_data().controller.update();
     
     let dim = self.data().window_dim;
-    let mouse_pos = self.data.mouse_pos;
     
-    let left_mouse = self.data.left_mouse;
-    let middle_mouse = self.data.middle_mouse;
-    let right_mouse = self.data.right_mouse;
-    let q_pressed = self.data.keys.q_pressed();
     let escape_pressed = self.data.keys.escape_pressed() && !self.escape_pressed_last_frame;
     let i_pressed = self.data.keys.i_pressed() && !self.i_pressed_last_frame;
     
@@ -411,8 +392,8 @@ impl Scene for BattleScreen {
     self.update_ui(dim, escape_pressed, i_pressed, delta_time);
     self.ability_ui.update(dim);
     
-    let mut player_projectiles = self.update_player(dim, delta_time);
-    let mut entity_projectiles = self.update_areas(dim, delta_time);
+    let player_projectiles = self.update_player(dim, delta_time);
+    let entity_projectiles = self.update_areas(dim, delta_time);
     self.update_projectiles(player_projectiles, entity_projectiles, delta_time);
     
     // Check collisions 
@@ -421,7 +402,7 @@ impl Scene for BattleScreen {
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
     let dim = self.data().window_dim;
-    let (width, height) = (dim.x as f32, dim.y as f32);
+    let (_width, _height) = (dim.x as f32, dim.y as f32);
     
     draw_calls.push(DrawCall::set_texture_scale(self.zoom));
     
@@ -441,7 +422,7 @@ impl Scene for BattleScreen {
     }
     
     for mutex_projectile in &self.projectiles {
-      let mut projectile = mutex_projectile.lock().unwrap();
+      let projectile = mutex_projectile.lock().unwrap();
       projectile.draw(draw_calls);
     }
     

@@ -1,9 +1,8 @@
 use crate::modules::entities::{Entity, EntityData};
-use crate::modules::projectiles::Projectile;
 
 use crate::cgmath::Vector2;
 
-use maat_graphics::math;
+
 
 #[derive(Clone)]
 pub struct Astroid {

@@ -12,8 +12,8 @@ use maat_graphics::DrawCall;
 use maat_graphics::math;
 
 use crate::modules::Animation;
-use crate::modules::entities::{Entity, BoxEntity, MutexEntity, Hostility};
-use crate::modules::abilities::{Ability, BoxAbility};
+use crate::modules::entities::{BoxEntity, Hostility};
+use crate::modules::abilities::{BoxAbility};
 
 use crate::cgmath::{Vector2, Vector3, Vector4};
 

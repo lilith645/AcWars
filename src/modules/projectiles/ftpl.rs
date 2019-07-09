@@ -4,7 +4,7 @@ use crate::modules::projectiles::{Projectile, ProjectileData};
 
 use std::f32::consts::PI;
 
-use crate::cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2};
 
 // Ftpl - Fancy torpedo phaser laser
 

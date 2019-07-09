@@ -6,7 +6,7 @@ mod max_speed_buff;
 mod speed_buff;
 mod phase_buff;
 
-use crate::modules::entities::{Entity, BoxEntity};
+use crate::modules::entities::{BoxEntity};
 
 pub type BoxBuff = Box<Buff>;
 

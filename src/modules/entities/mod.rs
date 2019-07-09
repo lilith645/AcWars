@@ -166,8 +166,8 @@ impl EntityData {
       hostility: Hostility::Friendly,
       should_exist: true,
       ship_sections: Vec::new(),
-      hull_material: Box::new(HullMaterial::new()),
-      repair_bay: Box::new(RepairBay::new()),
+      hull_material: Box::new(HullMaterial::new(Vector2::new(0.0, 0.0), Vector2::new(50.0, 50.0))),
+      repair_bay: Box::new(RepairBay::new(Vector2::new(0.0, 0.0), Vector2::new(50.0, 50.0))),
     }
   }
   
@@ -191,8 +191,8 @@ impl EntityData {
       hostility: Hostility::Friendly,
       should_exist: true,
       ship_sections: Vec::new(),
-      hull_material: Box::new(HullMaterial::new()),
-      repair_bay: Box::new(RepairBay::new()),
+      hull_material: Box::new(HullMaterial::new(Vector2::new(0.0, 0.0), Vector2::new(50.0, 50.0))),
+      repair_bay: Box::new(RepairBay::new(Vector2::new(0.0, 0.0), Vector2::new(50.0, 50.0))),
     }
   }
   
@@ -265,7 +265,7 @@ pub trait Entity: EntityClone {
   
   fn collision_information(&self) -> Vec<(Vector2<f32>, f32)>;
   fn collide_with(&mut self, entity: &mut Box<Entity>);
-   
+  
   fn update(&mut self, delta_time: f32) -> (Vec<BoxBuff>, Vec<BoxProjectile>) {
     self.physics(delta_time);
     self.mut_data().health += self.data().health_regen*delta_time;
@@ -310,6 +310,10 @@ pub trait Entity: EntityClone {
   
   fn is_in_phase_mode(&self) -> bool {
     self.data().phase_mode
+  }
+  
+  fn ship_sections(&self) -> &Vec<Box<ShipSection>> {
+    &self.data().ship_sections
   }
   
   fn collision_circles(&self) -> Vec<Vector3<f32>> {
@@ -442,12 +446,12 @@ pub trait Entity: EntityClone {
           let center = (self.position()+entity.position())*0.5;
           
           let astroid_direction = math::normalise_vector2(self.position()-center);
-          let current_vel = self.velocity();
+          let _current_vel = self.velocity();
           self.set_velocity(astroid_direction*velocity);
           self.apply_acceleration_in_direction(astroid_direction);
           
           let entity_direction =  -1.0*astroid_direction;
-          let current_vel = entity.velocity();
+          let _current_vel = entity.velocity();
           entity.set_velocity(entity_direction*velocity);
           entity.apply_acceleration_in_direction(entity_direction);
           

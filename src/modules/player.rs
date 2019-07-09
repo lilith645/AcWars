@@ -1,19 +1,17 @@
-use maat_graphics::DrawCall;
-
-use crate::modules::entities::{Entity, BoxEntity};
-use crate::modules::abilities::{Ability, BoxAbility, Laser, SingleShot, DoubleShot, Move, ProjectileSpeed, 
+use crate::modules::entities::{BoxEntity};
+use crate::modules::abilities::{BoxAbility, DoubleShot, Move, 
                                 Shatter, Shield, Dash};
 
 use crate::cgmath::{Vector2, InnerSpace};
 
-pub enum AbilityPosition {
-  LeftClick,
-  RightClick,
-  MiddleClick,
-  Ability1, // q
-  Ability2, // w
-  Ability3, // e
-  Ability4, // r
+pub enum _AbilityPosition {
+  _LeftClick,
+  _RightClick,
+  _MiddleClick,
+  _Ability1, // q
+  _Ability2, // w
+  _Ability3, // e
+  _Ability4, // r
 }
 
 pub struct Input {
@@ -57,7 +55,7 @@ impl Input {
         let x = if left_stick_position.x.abs() > dead_zone { left_stick_position.x } else { 0.0 };
         let y = if left_stick_position.y.abs() > dead_zone { left_stick_position.y } else { 0.0 };
         
-        let mut radius = 50.0;
+        let _radius = 50.0;
         target = ship.position()+Vector2::new(x, y);
         
         ability.activate(ship, target, window_size, &hostility);

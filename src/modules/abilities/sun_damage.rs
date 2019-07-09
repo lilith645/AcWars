@@ -1,10 +1,10 @@
-use maat_graphics::math;
+
 
 use crate::modules::abilities::{Ability, AbilityData};
-use crate::modules::entities::{Entity, BoxEntity, Hostility};
-use crate::modules::projectiles::{Projectile, BoxProjectile, Aoe};
+use crate::modules::entities::{BoxEntity, Hostility};
+use crate::modules::projectiles::{BoxProjectile, Aoe};
 
-use crate::cgmath::{Vector2, InnerSpace};
+use crate::cgmath::{Vector2};
 
 #[derive(Clone)]
 pub struct SunDamage {
@@ -28,15 +28,15 @@ impl Ability for SunDamage {
     &mut self.data
   }
   
-  fn apply_passive_effect(&self, projectile: &mut BoxProjectile) {
+  fn apply_passive_effect(&self, _projectile: &mut BoxProjectile) {
     
   }
   
-  fn applied_to(&self, ship: &mut BoxEntity, target: Vector2<f32>, window_size: Vector2<f32>, _parent_hostility: &Hostility) {
+  fn applied_to(&self, ship: &mut BoxEntity, _target: Vector2<f32>, _window_size: Vector2<f32>, _parent_hostility: &Hostility) {
     let ship_pos = ship.position();
     let radius = ship.size().x.max(ship.size().y) * 0.75;
     
-    let mut projectile: Box<Projectile> = Box::new(Aoe::new(ship_pos, radius));
+    let mut projectile: BoxProjectile = Box::new(Aoe::new(ship_pos, radius));
     
     self.apply_passive_abilities(&mut projectile);
     

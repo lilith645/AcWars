@@ -77,6 +77,8 @@ pub trait Ui: UiClone {
   fn data(&self) -> &UiData;
   fn mut_data(&mut self) -> &mut UiData;
   
+  fn custom_draw(&self, draw_calls: &mut Vec<DrawCall>);
+  
   fn external_option_value(&self) -> i32 {
     self.data().external_option_value
   }
@@ -165,5 +167,7 @@ pub trait Ui: UiClone {
         ui.draw(draw_calls);
       }
     }
+    
+    self.custom_draw(draw_calls);
   }
 }

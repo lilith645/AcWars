@@ -1,4 +1,8 @@
+use maat_graphics::DrawCall;
+
 use crate::modules::entities::sections::{ShipSection, ShipSectionData};
+
+use crate::cgmath::Vector2;
 
 #[derive(Clone)]
 pub struct RepairBay {
@@ -6,9 +10,9 @@ pub struct RepairBay {
 }
 
 impl RepairBay {
-  pub fn new() -> RepairBay {
+  pub fn new(offset: Vector2<f32>, size: Vector2<f32>) -> RepairBay {
     RepairBay {
-      data: ShipSectionData::new(),
+      data: ShipSectionData::new(offset, size),
     }
   }
 }
@@ -20,6 +24,10 @@ impl ShipSection for RepairBay {
   
   fn mut_data(&mut self) -> &mut ShipSectionData {
     &mut self.data
+  }
+  
+  fn draw(&self, _draw_calls: &mut Vec<DrawCall>) {
+    
   }
 }
 

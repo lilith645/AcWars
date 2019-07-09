@@ -1,35 +1,18 @@
 use maat_graphics::DrawCall;
 use maat_gui::widgets::{Widget, Image, Button, Text, RadioButton};
 
-use crate::modules::ui::{Ui, UiData, OptionsUi};
-use crate::modules::entities::{BoxEntity};
+use crate::modules::ui::{Ui, UiData};
+
 
 use crate::cgmath::{Vector2, Vector4};
 
-enum UiIndex {
-  ShipSelectUi,
-}
 
-impl UiIndex {
-  pub fn n(self) -> usize {
-    self as usize
-  }
-}
-
-enum WidgetIndex {
-  Background,
-  PlayButton,
-  PlayText,
-  QuitButton,
-  QuitText,
-  ShipOptions,
-}
-
-impl WidgetIndex {
-  pub fn n(self) -> usize {
-    self as usize
-  }
-}
+//const BACKGROUND: usize = 0;
+const PLAY_BUTTON: usize =  1;
+//const PLAY_TEXT: usize = 2;
+const QUIT_BUTTON: usize = 3;
+//const QUIT_TEXT: usize = 4;
+const SHIP_OPTIONS: usize = 4;
 
 #[derive(Clone)]
 pub struct ShipSelectUi {
@@ -68,8 +51,7 @@ impl ShipSelectUi {
                     .with_widget(play_text)
                     .with_widget(quit_button)
                     .with_widget(quit_text)
-                    .with_widget(ship_options)
-                    ,
+                    .with_widget(ship_options),
     }
   }
   
@@ -108,7 +90,7 @@ impl ShipSelectUi {
     Vector2::new(window_size.y*0.12, window_size.y*0.12)
   }
   
-  fn create_button(window_size: Vector2<f32>, primary_colour: Vector4<f32>, position: Vector2<f32>, size: Vector2<f32>, font: String, text: String) -> (Box<Widget>, Box<Widget>) {
+  fn create_button(_window_size: Vector2<f32>, primary_colour: Vector4<f32>, position: Vector2<f32>, size: Vector2<f32>, font: String, text: String) -> (Box<Widget>, Box<Widget>) {
     
     let button = Box::new(Button::new(position, size)
                                   .with_primary_colour(primary_colour));
@@ -133,18 +115,22 @@ impl Ui for ShipSelectUi {
     
   }
   
-  fn update_ui(&mut self, mouse_pos: Vector2<f32>, left_mouse: bool, escape_pressed: bool, window_size: Vector2<f32>, mut should_close: &mut bool, _should_resize: &mut Option<(Vector2<f32>, bool)>, should_next_scene: &mut bool, _delta_time: f32) {
+  fn update_ui(&mut self, _mouse_pos: Vector2<f32>, _left_mouse: bool, _escape_pressed: bool, _window_size: Vector2<f32>, should_close: &mut bool, _should_resize: &mut Option<(Vector2<f32>, bool)>, should_next_scene: &mut bool, _delta_time: f32) {
     
-    if self.data().widgets[WidgetIndex::PlayButton.n()].pressed() {
-      self.mut_data().external_option_value = self.data().widgets[WidgetIndex::ShipOptions.n()].external_option_value();
+    if self.data().widgets[PLAY_BUTTON].pressed() {
+      self.mut_data().external_option_value = self.data().widgets[SHIP_OPTIONS].external_option_value();
       if self.data().external_option_value > -1 {
         *should_next_scene = true;
       }
     }
     
-    if self.data().widgets[WidgetIndex::QuitButton.n()].pressed() {
+    if self.data().widgets[QUIT_BUTTON].pressed() {
       *should_close = true;
     }
+  }
+  
+  fn custom_draw(&self, _draw_calls: &mut Vec<DrawCall>) {
+    
   }
 }
 
