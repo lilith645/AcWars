@@ -3,12 +3,14 @@ pub use self::options_ui::OptionsUi;
 pub use self::pause_ui::PauseUi;
 pub use self::ship_select_ui::ShipSelectUi;
 pub use self::ship_module_viewer::ShipModuleViewer;
+pub use self::ability_switch_ui::AbilitySwitchUI;
 
 mod ability_ui;
 mod options_ui;
 mod pause_ui;
 mod ship_select_ui;
 mod ship_module_viewer;
+mod ability_switch_ui;
 
 use maat_graphics::DrawCall;
 
@@ -147,9 +149,10 @@ pub trait Ui: UiClone {
       return;
     }
     
+    self.update_widgets(mouse_pos, left_mouse, scroll_delta, delta_time);
     self.update_ui(mouse_pos, left_mouse, escape_pressed, window_size, should_close, should_resize, 
                    should_next_scene, delta_time);
-    self.update_widgets(mouse_pos, left_mouse, scroll_delta, delta_time);
+    
   }
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {

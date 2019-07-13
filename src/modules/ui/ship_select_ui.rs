@@ -12,7 +12,7 @@ const PLAY_BUTTON: usize =  1;
 //const PLAY_TEXT: usize = 2;
 const QUIT_BUTTON: usize = 3;
 //const QUIT_TEXT: usize = 4;
-const SHIP_OPTIONS: usize = 4;
+const SHIP_OPTIONS: usize = 5;
 
 #[derive(Clone)]
 pub struct ShipSelectUi {

@@ -10,6 +10,7 @@ use crate::modules::projectiles::{BoxProjectile, MutexProjectile};
 use crate::modules::areas::{BoxArea, SolarSystem, AstroidField};
 use crate::modules::player;
 use crate::modules::ui::{Ui,BoxUi, PauseUi, AbilityUi, ShipModuleViewer};
+use crate::modules::abilities::{Dash, SingleShot, DoubleShot, Laser, Haste, Move, Shield};
 
 use crate::cgmath::{Vector2};
 
@@ -20,9 +21,9 @@ use std::sync::{Arc, Mutex};
 use crate::modules::spatial_hash::SpatialHash;
 
 enum UiIndex {
+  AbilityUi,
   ModuleViewer,
   PauseUi,
-  _AbilityUi,
 }
 
 impl UiIndex {
@@ -34,13 +35,12 @@ impl UiIndex {
 pub struct BattleScreen {
   data: SceneData,
   areas: Vec<BoxArea>,
-  input: player::Input,
+  input: Arc<Mutex<player::Input>>,
   ship: MutexEntity,
   buffs: Vec<BoxBuff>,
   projectiles: Vec<MutexProjectile>,
   zoom: f32,
   camera: OrthoCamera,
-  ability_ui: AbilityUi,
   uis: Vec<BoxUi>,
   escape_pressed_last_frame: bool, 
   i_pressed_last_frame: bool, 
@@ -54,38 +54,39 @@ impl BattleScreen {
     
     ship.set_position(Vector2::new(540.0, 600.0));
     
+    let player_input = Arc::new(Mutex::new(player::Input::new()));
+    
     let ship = Arc::new(Mutex::new(ship));
+    let ability_ui = AbilityUi::new(Arc::clone(&player_input), window_size);
     
     let mut module_viewer = ShipModuleViewer::new(window_size, &ship);
     module_viewer.disable();
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
       areas: vec!(solar_system,astroid_field),
-      input: player::Input::new(),
+      input: player_input,
       ship,
       buffs: Vec::new(),
       projectiles: Vec::new(),
       zoom: 0.75,
       camera: OrthoCamera::new(window_size.x, window_size.y),
-      ability_ui: AbilityUi::new(),
-      uis: vec!(Box::new(module_viewer), Box::new(PauseUi::new(window_size))),
+      uis: vec!(Box::new(ability_ui), Box::new(module_viewer), Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
       i_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
     }
   }
   
-  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: MutexEntity, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, uis: Vec<Box<Ui>>, zoom: f32) -> BattleScreen {
+  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: MutexEntity, input: Arc<Mutex<player::Input>>, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, uis: Vec<Box<Ui>>, zoom: f32) -> BattleScreen {
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()), 
       areas,
-      input: player::Input::new(),
+      input,
       ship,
       buffs,
       projectiles,
       zoom,
       camera,
-      ability_ui: AbilityUi::new(),
       uis,
       escape_pressed_last_frame: false,
       i_pressed_last_frame: false,
@@ -280,9 +281,15 @@ impl BattleScreen {
     let right_mouse = self.data.right_mouse;
     
     let q_pressed = self.data.keys.q_pressed();
+    let w_pressed = self.data.keys.w_pressed();
+    let e_pressed = self.data.keys.e_pressed();
+    let r_pressed = self.data.keys.r_pressed();
     
     let mut ship = self.ship.lock().unwrap();
-    self.input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
+    let mut player_input = self.input.lock().unwrap();
+    player_input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, 
+                      mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, w_pressed,
+                      e_pressed, r_pressed, dim, delta_time);
     
     let (buffs, new_projectiles) = ship.update(delta_time);
     
@@ -366,7 +373,7 @@ impl Scene for BattleScreen {
   
   fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
     if self.data().window_resized {
-      Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.buffs.clone(), self.projectiles.clone(), self.uis.clone(), self.zoom))
+      Box::new(BattleScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.input.clone(), self.buffs.clone(), self.projectiles.clone(), self.uis.clone(), self.zoom))
     } else {
       Box::new(ShipSelectScreen::new(window_size))
     }
@@ -390,7 +397,6 @@ impl Scene for BattleScreen {
     }
     
     self.update_ui(dim, escape_pressed, i_pressed, delta_time);
-    self.ability_ui.update(dim);
     
     let player_projectiles = self.update_player(dim, delta_time);
     let entity_projectiles = self.update_areas(dim, delta_time);
@@ -440,6 +446,7 @@ impl Scene for BattleScreen {
     draw_calls.push(DrawCall::draw_instanced("Brew".to_string(), "Brew".to_string()));
     draw_calls.push(DrawCall::draw_instanced("LaserBeam".to_string(), "LaserBeam".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Bulbz".to_string(), "Bulbz".to_string()));
+    draw_calls.push(DrawCall::draw_instanced("Wall".to_string(), "Wall".to_string()));
     
     for area in &self.areas {
       area.draw_ship_ui(draw_calls);
@@ -460,9 +467,6 @@ impl Scene for BattleScreen {
     */
     draw_calls.push(DrawCall::set_texture_scale(1.0));
     draw_calls.push(DrawCall::reset_ortho_camera());
-    
-    let (abl, abm, abr, ab1, ab2, ab3, ab4) = self.input.return_abilities();
-    self.ability_ui.draw(abl, abm, abr, ab1, ab2, ab3, ab4, draw_calls);
     
     for ui in &self.uis {
       ui.draw(draw_calls);

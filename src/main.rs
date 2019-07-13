@@ -60,6 +60,7 @@ fn main() {
   // Entities
   graphics.add_texture("Sun".to_string(), "./resources/textures/entities/Sun_glasses.png".to_string());
   graphics.add_texture("Astroid".to_string(), "./resources/textures/entities/Astroid.png".to_string());
+  graphics.add_texture("Wall".to_string(), "./resources/textures/entities/Wall.png".to_string());
   // Projectiles
   graphics.add_texture("Ftpl".to_string(), "./resources/textures/projectiles/Ftpl.png".to_string());
   graphics.add_texture("Gob".to_string(), "./resources/textures/projectiles/Gob.png".to_string());
@@ -89,6 +90,7 @@ fn main() {
   graphics.create_instance_buffer("Bulbz".to_string());
   graphics.create_instance_buffer("Brew".to_string());
   graphics.create_instance_buffer("LaserBeam".to_string());
+  graphics.create_instance_buffer("Wall".to_string());
   
   graphics.load_shaders();
   

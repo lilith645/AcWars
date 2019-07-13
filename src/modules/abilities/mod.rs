@@ -115,6 +115,10 @@ pub trait Ability: AbilityClone {
     &self.data().ability_type
   }
   
+  fn percentage_cooldown_left(&self) -> f32 {
+    (self.data().time_left / self.data().timer).max(0.0)
+  }
+  
   fn apply_passive_abilities(&self, mut projectile: &mut BoxProjectile) {
     for passive in &self.data().passives {
       passive.apply_passive_effect(&mut projectile);

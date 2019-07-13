@@ -108,8 +108,8 @@ impl SpatialHash {
     let object = mutex_object.lock().unwrap();
     let position = object.position();
     let offset = object.size().x.max(object.size().y)*0.5;
-    let min = position - Vector2::new(offset, offset);
-    let max = position + Vector2::new(offset, offset);
+    let min = position - object.size()*0.5;//Vector2::new(offset, offset);
+    let max = position + object.size()*0.5;//Vector2::new(offset, offset);
     let min_hash = self.hash(min);
     let max_hash = self.hash(max);
     for i in min_hash.0..max_hash.0 {

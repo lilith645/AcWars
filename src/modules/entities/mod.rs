@@ -2,6 +2,7 @@ pub use self::ship::Ship;
 pub use self::brew::Brew;
 pub use self::sun::Sun;
 pub use self::astroid::Astroid;
+pub use self::wall::Wall;
 
 pub mod sections;
 
@@ -9,6 +10,7 @@ mod ship;
 mod brew;
 mod sun;
 mod astroid;
+mod wall;
 
 use maat_graphics::DrawCall;
 use maat_graphics::math;
@@ -17,6 +19,7 @@ use crate::modules::entities::sections::{ShipSection, RepairBay, HullMaterial};
 use crate::modules::projectiles::{Projectile, BoxProjectile};
 use crate::modules::buffs::{Buff, BoxBuff};
 use crate::modules::controllers::{EntityController, BoxEntityController};
+use crate::modules::abilities::{BoxAbility, NoAbility};
 
 use std::f32::consts::PI;
 

@@ -41,7 +41,6 @@ pub struct BenchmarkScreen {
   projectiles: Vec<MutexProjectile>,
   zoom: f32,
   camera: OrthoCamera,
-  ability_ui: AbilityUi,
   uis: Vec<BoxUi>,
   escape_pressed_last_frame: bool, 
   spatial_hash: Arc<Mutex<SpatialHash>>,
@@ -66,7 +65,6 @@ impl BenchmarkScreen {
       projectiles: Vec::new(),
       zoom: 0.75,
       camera: OrthoCamera::new(window_size.x, window_size.y),
-      ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
@@ -90,7 +88,6 @@ impl BenchmarkScreen {
       projectiles,
       zoom,
       camera,
-      ability_ui: AbilityUi::new(),
       uis: vec!(Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
@@ -385,8 +382,14 @@ impl Scene for BenchmarkScreen {
       let left_stick_position = Vector2::new(0.0, 0.0);
       let xbox_a_button = false;
       let right_trigger_pressed = false;
+      let w_pressed = self.data.keys.w_pressed();
+      let e_pressed = self.data.keys.e_pressed();
+      let r_pressed = self.data.keys.r_pressed();
+      
       let mut ship = self.ship.lock().unwrap();
-      self.input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, dim, delta_time);
+      self.input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, 
+                        mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, w_pressed,
+                        e_pressed, r_pressed, dim, delta_time);
       
       let (buffs, mut new_projectiles) = ship.update(delta_time);
       
@@ -445,8 +448,6 @@ impl Scene for BenchmarkScreen {
     self.collision_checks = 0;
     self.spatial_hash_collision();
     
-    self.ability_ui.update(dim);
-    
     self.camera.window_resized(dim.x, dim.y);
     let camera_target = ship_pos*self.zoom - Vector2::new(dim.x*0.5, dim.y*0.5);
     self.camera.lerp_to_position(camera_target,  Vector2::new(0.05, 0.05));
@@ -501,9 +502,6 @@ impl Scene for BenchmarkScreen {
     
     draw_calls.push(DrawCall::set_texture_scale(1.0));
     draw_calls.push(DrawCall::reset_ortho_camera());
-    
-    let (abl, abm, abr, ab1, ab2, ab3, ab4) = self.input.return_abilities();
-    self.ability_ui.draw(abl, abm, abr, ab1, ab2, ab3, ab4, draw_calls);
     
     for ui in &self.uis {
       ui.draw(draw_calls);
