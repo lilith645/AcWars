@@ -31,6 +31,11 @@ impl Astroid {
     self.data = self.data.as_neutral();
     self
   }
+  
+  pub fn as_misc(mut self) -> Astroid {
+    self.data = self.data.as_misc();
+    self
+  }
 }
 
 impl Entity for Astroid {

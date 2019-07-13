@@ -269,8 +269,6 @@ impl Ui for AbilityUi {
         }
       }
       
-      println!("ability index: {}", new_ability_index);
-      
       if ui_disabled {
         self.mut_data().widgets[RADIO_BUTTON_INDEX].reset_external_option_value();
       }

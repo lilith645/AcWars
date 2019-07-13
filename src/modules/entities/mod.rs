@@ -35,6 +35,7 @@ pub enum Hostility {
   Hostile,
   Neutral,
   Friendly,
+  Misc,
 }
 
 impl Hostility {
@@ -50,6 +51,10 @@ impl Hostility {
     *self == Hostility::Friendly
   }
   
+  pub fn is_misc(&self) -> bool {
+    *self == Hostility::Misc
+  }
+  
   pub fn make_hostile(&mut self) {
     *self = Hostility::Hostile;
   }
@@ -60,6 +65,10 @@ impl Hostility {
   
   pub fn make_friendly(&mut self) {
     *self = Hostility::Friendly;
+  }
+  
+  pub fn make_misc(&mut self) {
+    *self = Hostility::Misc
   }
   
   pub fn check_can_hit(&self, hostility: &Hostility) -> bool {
@@ -78,17 +87,28 @@ impl Hostility {
     if self.check_can_hit(hostility) {
       match *self {
         Hostility::Friendly => {
-          if hostility.is_hostile() {
+          if hostility.is_hostile() || hostility.is_misc() {
             true
           } else {
             false
           }
         },
         Hostility::Neutral => {
-          true
+          if hostility.is_misc() {
+            false
+          } else {
+            true
+          }
         },
         Hostility::Hostile => {
-          if hostility.is_friendly() {
+          if hostility.is_friendly() ||  hostility.is_misc() {
+            true
+          } else {
+            false
+          }
+        },
+        Hostility::Misc => {
+          if hostility.is_friendly() ||  hostility.is_hostile() {
             true
           } else {
             false
@@ -138,6 +158,8 @@ pub struct EntityData {
   health_regen: f32, // per second
   max_health: f32,
   shield: f32,
+  shield_regen: f32,
+  max_shield: f32,
   phase_mode: bool,
   projectiles: Vec<BoxProjectile>,
   buffs: Vec<Box<Buff>>,
@@ -163,6 +185,8 @@ impl EntityData {
       health_regen: 0.0,
       max_health: 100.0,
       shield: 0.0,
+      shield_regen: 0.0,
+      max_shield: 0.0,
       phase_mode: false,
       projectiles: Vec::new(),
       buffs: Vec::new(),
@@ -188,6 +212,8 @@ impl EntityData {
       health_regen: 0.0,
       max_health: 100.0,
       shield: 0.0,
+      shield_regen: 0.0,
+      max_shield: 0.0,
       phase_mode: false,
       projectiles: Vec::new(),
       buffs: Vec::new(),
@@ -225,6 +251,12 @@ impl EntityData {
     self
   }
   
+  pub fn with_shield(mut self, shield: f32) -> EntityData {
+    self.shield = shield;
+    self.max_shield = shield;
+    self
+  }
+  
   pub fn as_hostile(mut self) -> EntityData {
     self.hostility.make_hostile();
     self
@@ -235,6 +267,11 @@ impl EntityData {
     self
   }
   
+  pub fn as_misc(mut self) -> EntityData {
+    self.hostility.make_misc();
+    self
+  }
+  
   pub fn with_ship_section(mut self, section: Box<ShipSection>) -> EntityData {
     self.ship_sections.push(section);
     self
@@ -242,6 +279,11 @@ impl EntityData {
   
   pub fn with_health_regen(mut self, regen: f32) -> EntityData {
     self.health_regen = regen;
+    self
+  }
+  
+  pub fn with_shield_regen(mut self, regen: f32) -> EntityData {
+    self.shield_regen = regen;
     self
   }
 }
@@ -272,8 +314,15 @@ pub trait Entity: EntityClone {
   fn update(&mut self, delta_time: f32) -> (Vec<BoxBuff>, Vec<BoxProjectile>) {
     self.physics(delta_time);
     self.mut_data().health += self.data().health_regen*delta_time;
+    self.mut_data().shield += self.data().shield_regen*delta_time;
     if self.data().health >= self.data().max_health {
       self.mut_data().health = self.data().max_health;
+    }
+    if self.data().shield >= self.data().max_shield {
+      self.mut_data().shield = self.data().max_shield;
+    }
+    if self.data().shield < 0.0 {
+      self.mut_data().shield = 0.0;
     }
     
     (self.return_buffs(), self.return_projectiles())
@@ -376,6 +425,14 @@ pub trait Entity: EntityClone {
   
   fn set_rotation(&mut self, rot: f32) {
     self.mut_data().rotation = rot;
+  }
+  
+  fn set_max_shield(&mut self, max_shield: f32) {
+    self.mut_data().max_shield = max_shield;
+  }
+  
+  fn set_shield_regen(&mut self, shield_regen: f32) {
+    self.mut_data().shield_regen = shield_regen;
   }
   
   fn set_facing(&mut self, target: Vector2<f32>) {
@@ -502,6 +559,12 @@ pub trait Entity: EntityClone {
                                                          self.data().rotation, 
                                                          self.data().texture.to_string(), 
                                                          Vector3::new(0,0, 1)));
+    if self.data().shield > 0.0 {
+      draw_calls.push(DrawCall::add_instanced_sprite_sheet_with_alpha(self.data().position, self.data().size, 
+                                                           0.0,//self.data().rotation, 
+                                                           "BlueShield".to_string(), 
+                                                           Vector3::new(0, 0, 1), 0.5));
+    }
   }
   
   fn draw_collision_circles(&self, draw_calls: &mut Vec<DrawCall>) {

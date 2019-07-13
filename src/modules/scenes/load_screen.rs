@@ -66,6 +66,7 @@ impl Scene for LoadScreen {
       // ships
       draw_calls.push(DrawCall::load_texture("Bulbz".to_string()));
       draw_calls.push(DrawCall::load_texture("Brew".to_string()));
+      draw_calls.push(DrawCall::load_texture("BlueShield".to_string()));
       // entities
       draw_calls.push(DrawCall::load_texture("Sun".to_string()));
       draw_calls.push(DrawCall::load_texture("Astroid".to_string()));

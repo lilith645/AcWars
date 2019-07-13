@@ -1,5 +1,5 @@
 use crate::modules::entities::{BoxEntity};
-use crate::modules::abilities::{NoAbility, BoxAbility, SingleShot, DoubleShot, Move, 
+use crate::modules::abilities::{Ability, NoAbility, BoxAbility, SingleShot, DoubleShot, Move, 
                                 Shatter, Shield, Dash, Laser, Haste};
 
 use crate::cgmath::{Vector2, InnerSpace};
@@ -29,10 +29,13 @@ pub struct Input {
 
 impl Input {
   pub fn new() -> Input {
+    let mut double_shot = Box::new(DoubleShot::new());
+    double_shot.add_passive(Box::new(Shatter::new()));
+    
     let mut abilities: Vec<BoxAbility> = vec!(Box::new(NoAbility::new()),
       Box::new(Move::new()),
       Box::new(Shield::new()),
-      Box::new(DoubleShot::new()),
+      double_shot,
       Box::new(Dash::new()),
       Box::new(Laser::new()),
       Box::new(Haste::new()),
@@ -50,7 +53,7 @@ impl Input {
       ability_four: 7,
     };
     
-    //input.right_click_ability.add_passive(Box::new(Shatter::new()));
+    
     input
   }
   

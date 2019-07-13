@@ -13,17 +13,33 @@ pub struct AstroidField {
 
 impl AstroidField {
   pub fn new(position: Vector2<f32>, size: Vector2<f32>) -> AstroidField {
-    let astroid1 = FullEntity::new(Box::new(FloatingAi::new()), 
-                                   Box::new(Astroid::new(position, Vector2::new(750.0, 750.0)).as_hostile()));
+    let reasonable_spawn_field = size*0.8;
     
-    let astroid2 = FullEntity::new(Box::new(FloatingAi::new()), 
-                                   Box::new(Astroid::new(Vector2::new(-500.0, -1500.0), 
-                                                         Vector2::new(200.0, 200.0)).as_hostile()));
+    let astroid_size = Vector2::new(reasonable_spawn_field.x/16.0, reasonable_spawn_field.y/16.0);
+    
+    let mut astroids = Vec::new();
+    
+    let initial_pos = position-reasonable_spawn_field*0.5;
+    
+    let iterations = 8;
+    
+    for i in 0..iterations {
+      for j in 0..iterations {
+        let pos = initial_pos + Vector2::new(reasonable_spawn_field.x*(1.0/iterations as f32)*i as f32,
+                                             reasonable_spawn_field.y*(1.0/iterations as f32)*j as f32);
+        astroids.push(FullEntity::new(Box::new(FloatingAi::new()), 
+                                      Box::new(Astroid::new(pos, astroid_size).as_misc())));
+      }
+    }
+    
+    let mut data = AreaData::new(position, size);
+    
+    for astroid in astroids {
+      data = data.with_entity(astroid);
+    }
     
     AstroidField {
-      data: AreaData::new(position, size)
-                      .with_entity(astroid1)
-                      .with_entity(astroid2),
+      data,
     }
   }
 }

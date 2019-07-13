@@ -57,6 +57,7 @@ fn main() {
   // Ships
   graphics.add_texture("Bulbz".to_string(), "./resources/textures/ships/Bulbz.png".to_string());
   graphics.add_texture("Brew".to_string(), "./resources/textures/ships/Brew.png".to_string());
+  graphics.add_texture("BlueShield".to_string(), "./resources/textures/ships/shields/BlueShield.png".to_string());
   // Entities
   graphics.add_texture("Sun".to_string(), "./resources/textures/entities/Sun_glasses.png".to_string());
   graphics.add_texture("Astroid".to_string(), "./resources/textures/entities/Astroid.png".to_string());
@@ -91,6 +92,7 @@ fn main() {
   graphics.create_instance_buffer("Brew".to_string());
   graphics.create_instance_buffer("LaserBeam".to_string());
   graphics.create_instance_buffer("Wall".to_string());
+  graphics.create_instance_buffer("BlueShield".to_string());
   
   graphics.load_shaders();
   

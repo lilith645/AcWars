@@ -50,9 +50,11 @@ pub struct BattleScreen {
 impl BattleScreen {
   pub fn new(window_size: Vector2<f32>, mut ship: BoxEntity) -> BattleScreen {
     let solar_system: BoxArea = Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0)));
-    let astroid_field: BoxArea = Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(500.0, 1000.0)));
+    let astroid_field: BoxArea = Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(2000.0, 2000.0)));
     
     ship.set_position(Vector2::new(540.0, 600.0));
+    ship.set_max_shield(100.0);
+   // ship.set_shield_regen(1.0);
     
     let player_input = Arc::new(Mutex::new(player::Input::new()));
     
@@ -447,6 +449,7 @@ impl Scene for BattleScreen {
     draw_calls.push(DrawCall::draw_instanced("LaserBeam".to_string(), "LaserBeam".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Bulbz".to_string(), "Bulbz".to_string()));
     draw_calls.push(DrawCall::draw_instanced("Wall".to_string(), "Wall".to_string()));
+    draw_calls.push(DrawCall::draw_instanced("BlueShield".to_string(), "BlueShield".to_string()));
     
     for area in &self.areas {
       area.draw_ship_ui(draw_calls);

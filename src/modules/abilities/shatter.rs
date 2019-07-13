@@ -64,6 +64,7 @@ impl Ability for Shatter {
         Hostility::Friendly => {  },
         Hostility::Neutral => { projectile.make_neutral() },
         Hostility::Hostile => { projectile.make_hostile() },
+        Hostility::Misc => {  },
       }
       projectile.lock_hostility();
     }

@@ -18,9 +18,6 @@ impl SolarSystem {
                               Box::new(Sun::new(Vector2::new(840.0, 1500.0)).as_neutral()));
     let wall = FullEntity::new(Box::new(IdleAi::new()), 
                               Box::new(Wall::new(Vector2::new(0.0, 1500.0)).as_neutral()));
-    let astroid = FullEntity::new(Box::new(AbilitySpamAi::new()), 
-                                  Box::new(Astroid::new(Vector2::new(-500.0, -1500.0), 
-                                                        Vector2::new(100.0, 100.0)).as_hostile()));
     
     let e1_single_shot = Box::new(SingleShot::new());
     let e1_haste = Box::new(Haste::new());
@@ -37,7 +34,6 @@ impl SolarSystem {
     SolarSystem {
       data: AreaData::new(position, size)
                       .with_entity(sun)
-                      .with_entity(astroid)
                       .with_entity(e1)
                       .with_entity(e2)
                       .with_entity(e3)
