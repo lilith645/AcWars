@@ -21,14 +21,16 @@ use crate::modules::buffs::{Buff, BoxBuff};
 use crate::modules::controllers::{EntityController, BoxEntityController};
 use crate::modules::abilities::{BoxAbility, NoAbility};
 
+use parking_lot::Mutex;
+
 use std::f32::consts::PI;
 
 use crate::cgmath::{Vector2, Vector3, Vector4, InnerSpace};
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub type MutexEntity = Arc<Mutex<BoxEntity>>;
-pub type BoxEntity = Box<Entity>;
+pub type BoxEntity = Box<Entity + Send + Sync>;
 
 #[derive(Clone, PartialEq)]
 pub enum Hostility {
@@ -289,17 +291,17 @@ impl EntityData {
 }
 
 pub trait EntityClone {
-  fn clone_entity(&self) -> Box<Entity>;
+  fn clone_entity(&self) -> BoxEntity;
 }
 
 impl<T: 'static + Entity + Clone + Send + Sync> EntityClone for T {
-  fn clone_entity(&self) -> Box<Entity> {
+  fn clone_entity(&self) -> BoxEntity {
     Box::new(self.clone())
   }
 }
 
-impl Clone for Box<Entity> {
-  fn clone(&self) -> Box<Entity> {
+impl Clone for BoxEntity {
+  fn clone(&self) -> BoxEntity {
     self.clone_entity()
   }
 }
@@ -309,7 +311,7 @@ pub trait Entity: EntityClone {
   fn mut_data(&mut self) -> &mut EntityData;
   
   fn collision_information(&self) -> Vec<(Vector2<f32>, f32)>;
-  fn collide_with(&mut self, entity: &mut Box<Entity>);
+  fn collide_with(&mut self, entity: &mut BoxEntity);
   
   fn update(&mut self, delta_time: f32) -> (Vec<BoxBuff>, Vec<BoxProjectile>) {
     self.physics(delta_time);
@@ -461,7 +463,7 @@ pub trait Entity: EntityClone {
     self.mut_data().acceleration = math::normalise_vector2(direction);
   }
   
-  fn fire_projectile(&mut self, mut projectile: Box<Projectile>) {
+  fn fire_projectile(&mut self, mut projectile: BoxProjectile) {
     if self.data().hostility.is_hostile() {
       projectile.make_hostile(); 
     } else if self.data().hostility.is_neutral() {
@@ -491,7 +493,7 @@ pub trait Entity: EntityClone {
     self.mut_data().acceleration = Vector2::new(0.0, 0.0);
   }
   
-  fn entity_collision(&mut self, entity: &mut Box<Entity>, damage: f32, velocity: f32) {
+  fn entity_collision(&mut self, entity: &mut BoxEntity, damage: f32, velocity: f32) {
     let entity_circles = entity.collision_circles();
     let astroid_circles = self.collision_circles();
     

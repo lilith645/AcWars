@@ -1,6 +1,6 @@
 use maat_graphics::math;
 
-use crate::modules::entities::{Entity, EntityData};
+use crate::modules::entities::{Entity, BoxEntity, EntityData};
 
 use crate::cgmath::Vector2;
 
@@ -69,7 +69,7 @@ impl Entity for Wall {
     wall_circles
   }
   
-  fn collide_with(&mut self, entity: &mut Box<Entity>) {
-    self.entity_collision(entity, 2.0, 200.0);
+  fn collide_with(&mut self, entity: &mut BoxEntity) {
+    self.entity_collision(entity, 0.01, 200.0);
   }
 }

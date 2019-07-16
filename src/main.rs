@@ -3,6 +3,7 @@ extern crate maat_input_handler;
 extern crate maat_gui;
 extern crate rand;
 extern crate hlua;
+extern crate parking_lot;
 
 pub use maat_graphics::winit;
 pub use maat_graphics::cgmath;

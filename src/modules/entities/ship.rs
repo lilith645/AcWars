@@ -1,5 +1,5 @@
 use crate::modules::entities::sections::{Hull, Wing, Thruster, WeaponMount};
-use crate::modules::entities::{Entity, EntityData};
+use crate::modules::entities::{Entity, BoxEntity, EntityData};
 
 use crate::cgmath::Vector2;
 
@@ -53,7 +53,7 @@ impl Entity for Ship {
     vec!((Vector2::new(0.0, 0.0), radius))
   }
   
-  fn collide_with(&mut self, entity: &mut Box<Entity>) {
+  fn collide_with(&mut self, entity: &mut BoxEntity) {
     self.entity_collision(entity, 0.5, 500.0);
   }
 }

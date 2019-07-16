@@ -4,10 +4,10 @@ use hlua::Lua;
 
 use crate::modules::scenes::Scene;
 use crate::modules::scenes::SceneData;
-use crate::modules::scenes::{BattleScreen};
+use crate::modules::scenes::{BattleScreen, BenchmarkScreen};
 
 use crate::modules::ui::{BoxUi, ShipSelectUi};
-use crate::modules::entities::{BoxEntity, Astroid, Brew, Ship, Sun};
+use crate::modules::entities::{Entity, BoxEntity, Astroid, Brew, Ship, Sun};
 
 use crate::cgmath::{Vector2};
 
@@ -55,6 +55,7 @@ impl Scene for ShipSelectScreen {
   fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
     let index = self.select_ui.external_option_value() as usize;
     Box::new(BattleScreen::new(window_size, self.possible_ships[index].clone()))
+   // Box::new(BenchmarkScreen::new(window_size))
   }
   
   fn update(&mut self, _ui: Option<&maat_graphics::imgui::Ui>, _lua: Option<&mut Lua>, delta_time: f32) {

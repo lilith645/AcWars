@@ -105,7 +105,7 @@ impl SpatialHash {
   }
   
   pub fn insert_object_for_point(&mut self, mutex_object: MutexEntity) {
-    let object = mutex_object.lock().unwrap();
+    let object = mutex_object.lock();
     let position = object.position();
     let offset = object.size().x.max(object.size().y)*0.5;
     let min = position - object.size()*0.5;//Vector2::new(offset, offset);

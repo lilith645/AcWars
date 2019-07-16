@@ -15,7 +15,7 @@ mod repair_bay;
 mod hull_material;
 use maat_graphics::DrawCall;
 
-use crate::modules::abilities::Ability;
+use crate::modules::abilities::BoxAbility;
 
 use crate::cgmath::Vector2;
 
@@ -64,7 +64,7 @@ pub trait ShipSection: ShipSectionClone {
     self.data().size
   }
   
-  fn active_abilities(&self) -> Vec<Box<Ability>> {
+  fn active_abilities(&self) -> Vec<BoxAbility> {
     let mut abilities = Vec::new();
     for slot in &self.data().modular_slots {
       if let Some(ability) = slot.ability() {

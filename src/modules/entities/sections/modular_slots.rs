@@ -1,10 +1,10 @@
-use crate::modules::abilities::Ability;
+use crate::modules::abilities::BoxAbility;
 
 #[derive(Clone)]
 pub struct ModularSlot {
   id: i32,
   linked_id: Option<i32>,
-  ability: Option<Box<Ability>>,
+  ability: Option<BoxAbility>,
 }
 
 impl ModularSlot {
@@ -16,7 +16,7 @@ impl ModularSlot {
     }
   }
   
-  pub fn ability(&self) -> Option<Box<Ability>> {
+  pub fn ability(&self) -> Option<BoxAbility> {
     self.ability.clone()
   }
   
@@ -24,7 +24,7 @@ impl ModularSlot {
     self.linked_id.is_some()
   }
   
-  pub fn gain_ability(&mut self, ability: Box<Ability>) {
+  pub fn gain_ability(&mut self, ability: BoxAbility) {
     self.ability = Some(ability);
   }
   

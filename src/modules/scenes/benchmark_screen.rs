@@ -6,24 +6,32 @@ use crate::modules::scenes::Scene;
 use crate::modules::scenes::SceneData;
 
 use crate::modules::buffs::{BoxBuff};
-use crate::modules::entities::{MutexEntity, Ship};
-use crate::modules::projectiles::{MutexProjectile};
+use crate::modules::entities::{MutexEntity, BoxEntity, Ship};
+use crate::modules::projectiles::{MutexProjectile, BoxProjectile};
 use crate::modules::areas::{BoxArea, BenchmarkArea};
 use crate::modules::player;
-use crate::modules::ui::{BoxUi, PauseUi, AbilityUi};
+use crate::modules::ui::{BoxUi, PauseUi, AbilityUi, ShipModuleViewer};
 
 use crate::cgmath::{Vector2, Vector4};
 
 use hlua::Lua;
 
-use std::sync::{Arc, Mutex};
+use parking_lot::Mutex;
+use std::sync::Arc;
 
 use crate::modules::spatial_hash::SpatialHash;
+use crate::modules::collisions;
+use maat_graphics::ThreadPool;
+use std::thread;
+use std::sync::mpsc;
+use std::sync::mpsc::channel;
+
 use crate::modules::kdtree::Node;
 
 enum UiIndex {
+  AbilityUi,
+  ModuleViewer,
   PauseUi,
-  _AbilityUi,
 }
 
 impl UiIndex {
@@ -35,7 +43,7 @@ impl UiIndex {
 pub struct BenchmarkScreen {
   data: SceneData,
   areas: Vec<BoxArea>,
-  input: player::Input,
+  input: Arc<Mutex<player::Input>>,
   ship: MutexEntity,
   buffs: Vec<BoxBuff>,
   projectiles: Vec<MutexProjectile>,
@@ -43,6 +51,7 @@ pub struct BenchmarkScreen {
   camera: OrthoCamera,
   uis: Vec<BoxUi>,
   escape_pressed_last_frame: bool, 
+  i_pressed_last_frame: bool, 
   spatial_hash: Arc<Mutex<SpatialHash>>,
   collision_checks: u64,
   _kdtree: Option<Box<Node>>,
@@ -50,39 +59,61 @@ pub struct BenchmarkScreen {
   virtual_input: Vec<f32>,
   all_fps: Vec<f64>,
   mouse_angle: f32,
+  thread_pool: ThreadPool,
+  tx: mpsc::Sender<()>,
+  rx: mpsc::Receiver<()>,
 }
 
 impl BenchmarkScreen {
   pub fn new(window_size: Vector2<f32>) -> BenchmarkScreen {
     let benchmark: BoxArea = Box::new(BenchmarkArea::new(Vector2::new(0.0, 0.0), Vector2::new(20000.0, 20000.0), 10));
     
+    let player_input = Arc::new(Mutex::new(player::Input::new()));
+    
+    let ship: MutexEntity = Arc::new(Mutex::new(Box::new(Ship::new(Vector2::new(0.0, 0.0)).with_health(1500000000.0))));
+    
+    let ability_ui = AbilityUi::new(Arc::clone(&player_input), window_size);
+    
+    let mut module_viewer = ShipModuleViewer::new(window_size, &ship);
+    
+    let (tx, rx) = mpsc::channel();
+    let thread_pool = ThreadPool::new(5);
+    let fake_tx = tx.clone();
+     thread_pool.execute(move || {
+          fake_tx.send(()).unwrap();
+    });
+    
     BenchmarkScreen {
       data: SceneData::new(window_size, Vec::new()),
       areas: vec!(benchmark),
-      input: player::Input::new(),
-      ship: Arc::new(Mutex::new(Box::new(Ship::new(Vector2::new(0.0, 0.0)).with_health(1500000000.0)))),
+      input: player_input,
+      ship,
       buffs: Vec::new(),
       projectiles: Vec::new(),
       zoom: 0.75,
       camera: OrthoCamera::new(window_size.x, window_size.y),
-      uis: vec!(Box::new(PauseUi::new(window_size))),
+      uis: vec!(Box::new(ability_ui), Box::new(module_viewer), Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
-      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
+      i_pressed_last_frame: false, 
+      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(100.0))),
       collision_checks: 0,
       _kdtree: None,
       total_delta_time: 0.0,
       virtual_input: (0..100).into_iter().map(|x| x as f32*0.5).collect::<Vec<f32>>(),
       all_fps: Vec::new(),
       mouse_angle: 0.0,
+      thread_pool,
+      tx,
+      rx,
     }
   }
   
-  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: MutexEntity, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, zoom: f32, all_fps: Vec<f64>, mouse_angle: f32) -> BenchmarkScreen {
-    
+  pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: MutexEntity, input: Arc<Mutex<player::Input>>, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, zoom: f32, all_fps: Vec<f64>, mouse_angle: f32) -> BenchmarkScreen {
+    let (tx, rx) = mpsc::channel();
     BenchmarkScreen {
       data: SceneData::new(window_size, Vec::new()), 
       areas,
-      input: player::Input::new(),
+      input,
       ship,
       buffs,
       projectiles,
@@ -90,215 +121,115 @@ impl BenchmarkScreen {
       camera,
       uis: vec!(Box::new(PauseUi::new(window_size))),
       escape_pressed_last_frame: false,
-      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
+      i_pressed_last_frame: false,
+      spatial_hash: Arc::new(Mutex::new(SpatialHash::new(100.0))),
       collision_checks: 0,
       _kdtree: None,
       total_delta_time: 0.0,
       virtual_input: (0..100).into_iter().map(|x| x as f32*0.5).collect::<Vec<f32>>(),
       all_fps,
       mouse_angle,
-    }
-  }
-  /*
-  pub fn kdtree_collision(&mut self, all_entities: Vec<MutexEntity>) {
-    let mut all_positions: Vec<Vector2<f32>> = Vec::with_capacity(10000);
-    
-    for mutex_entity in &all_entities {
-      let entity = mutex_entity.lock().unwrap();
-      all_positions.push(entity.position());
-    }
-    
-    self.kdtree = Node::create_kdtree(all_positions, 2, 0, 3);
-    
-    if let Some(kdtree) = &self.kdtree {
-      let boundry = kdtree.get_boundries();
-      for i in 0..self.projectiles.len() {
-        let mut projectile = self.projectiles[i].lock().unwrap();
-        let projectile_pos = projectile.position();
-        if projectile_pos.x < boundry.x && projectile_pos.y < boundry.y || projectile_pos.x > boundry.z && projectile_pos.y < boundry.w  {
-          continue;
-        }
-        
-        let projectile_index = kdtree.get_depth_index(projectile.position(), 0, (0,0));
-        
-        if projectile.should_exist() {
-          // player collision
-          if projectile.can_hit(self.ship.hostility()) {
-            let ship_index = kdtree.get_depth_index(self.ship.position(), 0, (0,0));
-            if projectile_index == ship_index {
-              if self.ship.should_exist() {
-                self.collision_checks += 1;
-                projectile.collide_with(&mut self.ship);
-              }
-            }
-          }
-          
-          // enemy collision 
-          for enemy_mutex in &all_entities {
-            if !projectile.should_exist() {
-              break;
-            }
-            
-            let mut enemy = enemy_mutex.lock().unwrap();
-            let enemy_index = kdtree.get_depth_index(enemy.position(), 0, (0,0));
-            if enemy_index == projectile_index {
-              if projectile.can_hit(enemy.hostility()) {
-                if enemy.should_exist() {
-                  self.collision_checks += 1;
-                  projectile.collide_with(&mut *enemy);
-                }
-              }
-            }
-          }
-        }
-      }
+      thread_pool: ThreadPool::new(5),
+      tx,
+      rx,
     }
   }
   
-  pub fn spatial_hash_collision_projectiles(&mut self, all_entities: Vec<MutexEntity>, all_projectiles: Vec<MutexProjectile>) {
-    let mut spatial_hash = self.spatial_hash.lock().unwrap();
-    for projectile in all_projectiles {
-      spatial_hash.insert_object_for_point(Arc::clone(&projectile));
-    }
+  pub fn update_pause(&mut self, dim: Vector2<f32>, escape_pressed: bool, delta_time: f32) -> bool {
+    let mouse_pos = self.data().mouse_pos;
+    let left_mouse = self.data().left_mouse;
+    let scroll_delta = self.data().scroll_delta;
     
-    // player collision
-    if self.ship.should_exist() {
-      let mut projectiles = spatial_hash.retrieve_objects(&self.ship);
-      for mutex_projectile in &projectiles {
-        let mut projectile = mutex_projectile.lock().unwrap();
-        if projectile.should_exist() {
-          if projectile.can_hit(self.ship.hostility()) {
-            self.collision_checks += 1;
-            projectile.collide_with(&mut self.ship);
-          }
-        }
+    // Pause Ui
+    if escape_pressed {
+      if self.uis[UiIndex::PauseUi.n()].enabled() {
+        self.uis[UiIndex::PauseUi.n()].disable();
+      } else {
+        self.uis[UiIndex::PauseUi.n()].enable();
       }
     }
     
-    for i in 0..all_entities.len() {
-      let mut entity = all_entities[i].lock().unwrap();
-      if entity.should_exist() {
-        // enemy collision 
-        let mut projectiles = spatial_hash.retrieve_objects(&*entity);
-        for mutex_projectile in &projectiles {
-          let mut projectile = mutex_projectile.lock().unwrap();
-          if !projectile.should_exist() {
-            continue;
-          }
-          
-          if projectile.can_hit(entity.hostility()) {
-            self.collision_checks += 1;
-            projectile.collide_with(&mut *entity);
-          }
-        }
-      }
+    let mut should_close = false;
+    let mut should_resize = None;
+    let mut should_next_scene = false;
+    self.uis[UiIndex::PauseUi.n()].update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, 
+                                          &mut should_resize, &mut should_next_scene, scroll_delta, delta_time);
+    if should_resize.is_some() {
+      self.mut_data().should_resize_window = should_resize;
+    }
+    if should_close {
+      self.mut_data().should_close = true;
+    }
+      
+    if should_next_scene {
+      self.mut_data().next_scene = true;
+      self.mut_data().window_resized = false;
     }
     
-    spatial_hash.clear();
-  }*/
-  
-  pub fn spatial_hash_collision(&self) {
-    
-    let _all_entities: Vec<MutexEntity> = Vec::new();
-    
-    let mut spatial_hash = self.spatial_hash.lock().unwrap();
-    spatial_hash.clear();
-    for area in &self.areas {
-      for mutex_entity in &area.entities() {
-        spatial_hash.insert_object_for_point(Arc::clone(&mutex_entity));
-      }
-    }
-    spatial_hash.insert_object_for_point(Arc::clone(&self.ship));
-    
-    for i in 0..self.projectiles.len() {
-      let mut projectile = self.projectiles[i].lock().unwrap();
-      if projectile.should_exist() {
-        // entity collision 
-        let mut entities = spatial_hash.retrieve_objects(&*projectile);
-        for entity_mutex in &mut entities {
-          if !projectile.should_exist() {
-            break;
-          }
-          
-          let mut entity = entity_mutex.lock().unwrap();
-          if entity.should_exist() {
-            if projectile.can_hit(entity.hostility()) {
-              projectile.collide_with(&mut *entity);
-            }
-          }
-        }
-      }
-    }
-    
-    let entity_groups = spatial_hash.retrieve_possible_entity_collisions();
-    for group in &entity_groups {
-      for i in 0..group.len() {
-        for j in i..group.len() {
-          if i == j {
-            continue;
-          }
-          let mut entity_one = group[i].lock().unwrap();
-          let mut entity_two = group[j].lock().unwrap();
-          
-          if entity_one.should_exist() && entity_two.should_exist() {
-            entity_one.collide_with(&mut *entity_two);
-            entity_two.collide_with(&mut *entity_one);
-          }
-        }
-      }
-    }
-    
-    spatial_hash.clear();
-  }
-  /*
-  pub fn brute_force_collision(&mut self, all_entities: Vec<MutexEntity>) {
-    for i in 0..self.projectiles.len() {
-      let mut projectile = self.projectiles[i].lock().unwrap();
-      if projectile.should_exist() {
-        // player collision
-        if projectile.can_hit(self.ship.hostility()) {
-          if self.ship.should_exist() {
-            self.collision_checks += 1;
-            projectile.collide_with(&mut self.ship);
-          }
-        }
-        
-        // enemy collision 
-        for enemy_mutex in &all_entities {
-          if !projectile.should_exist() {
-            break;
-          }
-          
-          let mut enemy = enemy_mutex.lock().unwrap();
-          if projectile.can_hit(enemy.hostility()) {
-            if enemy.should_exist() {
-              self.collision_checks += 1;
-              projectile.collide_with(&mut *enemy);
-            }
-          }
-        }
-      }
-    }
-  }*/
-}
-
-impl Scene for BenchmarkScreen {
-  fn data(&self) -> &SceneData {
-    &self.data
+    self.uis[UiIndex::PauseUi.n()].enabled()
   }
   
-  fn mut_data(&mut self) -> &mut SceneData {
-    &mut self.data
-  }
-  
-  fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
-    Box::new(BenchmarkScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.buffs.clone(), self.projectiles.clone(), self.zoom, self.all_fps.clone(), self.mouse_angle))
-  }
-  
-  fn update(&mut self, _ui: Option<&imgui::Ui>, _lua: Option<&mut Lua>, delta_time: f32) {
-    self.mut_data().controller.update();
+  pub fn update_ui(&mut self, dim: Vector2<f32>, escape_pressed: bool, i_pressed: bool, delta_time: f32) {
+    let mouse_pos = self.data().mouse_pos;
+    let left_mouse = self.data().left_mouse;
+    let scroll_delta = self.data().scroll_delta;
     
-    let dim = self.data().window_dim;
+    // Module Viewer Ui
+    if i_pressed {
+      if self.uis[UiIndex::ModuleViewer.n()].enabled() {
+        self.uis[UiIndex::ModuleViewer.n()].disable();
+      } else {
+        self.uis[UiIndex::ModuleViewer.n()].enable();
+      }
+    }
+    
+    // UI
+    let mut should_close = false;
+    let mut should_resize = None;
+    let mut should_next_scene = false;
+    for i in 0..self.uis.len() {
+      if i == UiIndex::PauseUi.n() {
+        continue;
+      }
+      
+      self.uis[i].update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut should_resize, 
+                         &mut should_next_scene, scroll_delta, delta_time);
+    }
+    
+    if should_resize.is_some() {
+      self.mut_data().should_resize_window = should_resize;
+    }
+    
+    if should_close {
+      self.mut_data().should_close = true;
+    }
+      
+    if should_next_scene || { let ship = self.ship.lock(); !ship.should_exist() } {
+      self.mut_data().next_scene = true;
+    }
+    
+    
+    if self.uis[UiIndex::PauseUi.n()].enabled() {
+      return;
+    }
+  }
+  
+  pub fn update_player(&mut self, dim: Vector2<f32>, delta_time: f32) -> Vec<BoxProjectile> {
+    // Player
+    let left_stick_position =  self.data().controller.left_stick_position();
+    let xbox_a_button = self.data().controller.a_button_pressed();
+    let right_trigger_pressed = self.data().controller.right_trigger_pressed();
+    
+    let mouse_pos = self.data().mouse_pos;
+    let left_mouse = self.data.left_mouse;
+    let middle_mouse = self.data.middle_mouse;
+    let right_mouse = self.data.right_mouse;
+    
+    let q_pressed = self.data.keys.q_pressed();
+    let w_pressed = self.data.keys.w_pressed();
+    let e_pressed = self.data.keys.e_pressed();
+    let r_pressed = self.data.keys.r_pressed();
+    
     let mut mouse_pos = self.data.mouse_pos;
     
     self.total_delta_time += delta_time;
@@ -352,105 +283,325 @@ impl Scene for BenchmarkScreen {
       _ => {},
     }
     
-    // Key presses
-    if escape_pressed {
-      if self.uis[UiIndex::PauseUi.n()].enabled() {
-        self.uis[UiIndex::PauseUi.n()].disable();
-      } else {
-        self.uis[UiIndex::PauseUi.n()].enable();
+    
+    let mut ship = self.ship.lock();
+    let mut player_input = self.input.lock();
+    player_input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, 
+                      mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, w_pressed,
+                      e_pressed, r_pressed, dim, delta_time);
+    
+    let (buffs, new_projectiles) = ship.update(delta_time);
+    
+    let mut offset = 0;
+    for i in 0..self.buffs.len() {
+      self.buffs[i-offset].update(&mut *ship, delta_time);
+      if !self.buffs[i-offset].should_exist() {
+        self.buffs[i-offset].unapply_buff(&mut *ship);
+        self.buffs.remove(i-offset);
+        offset += 1;
       }
     }
     
-    // UI
-    let mut should_close = false;
-    let mut should_next_scene = false;
-    for ui in &mut self.uis {
-      ui.update(mouse_pos, left_mouse, escape_pressed, dim, &mut should_close, &mut None, &mut should_next_scene, scroll_delta, delta_time);
-    }
-    if should_close {
-      self.mut_data().should_close = true;
+    for buff in buffs {
+      buff.apply_buff(&mut *ship);
+      self.buffs.push(buff);
     }
     
-    self.escape_pressed_last_frame = self.data().keys.escape_pressed();
-    if self.uis[UiIndex::PauseUi.n()].enabled() {
-      return;
+    new_projectiles
+  }
+  
+  pub fn update_areas(&mut self, dim: Vector2<f32>, delta_time: f32) -> Vec<BoxProjectile> {
+    let mut new_projectiles = Vec::new();
+    
+    let mut ship = self.ship.lock();
+    for area in &mut self.areas {
+      let projectiles = area.update(&mut *ship, dim, delta_time);
+      for projectile in projectiles {
+        new_projectiles.push(projectile);
+      }
     }
     
-    let ship_pos;
-    {
-      // Player
-      let left_stick_position = Vector2::new(0.0, 0.0);
-      let xbox_a_button = false;
-      let right_trigger_pressed = false;
-      let w_pressed = self.data.keys.w_pressed();
-      let e_pressed = self.data.keys.e_pressed();
-      let r_pressed = self.data.keys.r_pressed();
-      
-      let mut ship = self.ship.lock().unwrap();
-      self.input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, 
-                        mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, w_pressed,
-                        e_pressed, r_pressed, dim, delta_time);
-      
-      let (buffs, mut new_projectiles) = ship.update(delta_time);
-      
-      let mut offset = 0;
-      for i in 0..self.buffs.len() {
-        self.buffs[i-offset].update(&mut *ship, delta_time);
-        if !self.buffs[i-offset].should_exist() {
-          self.buffs[i-offset].unapply_buff(&mut *ship);
-          self.buffs.remove(i-offset);
-          offset += 1;
-        }
-      }
-      
-      for buff in buffs {
-        buff.apply_buff(&mut *ship);
-        self.buffs.push(buff);
-      }
-      
-      for area in &mut self.areas {
-        let projectiles = area.update(&mut *ship, dim, delta_time);
-        for projectile in projectiles {
-          new_projectiles.push(projectile);
-        }
-      }
-      
-      // Projectiles
-      for new_projectile in new_projectiles {
-        self.projectiles.push(Arc::new(Mutex::new(new_projectile)));
-      }
-      
-      offset = 0;
-      for i in 0..self.projectiles.len() {
-        if i < offset {
-          break;
-        }
-        
-        let projectile_should_exist;
-        {
-          let mut projectile = self.projectiles[i-offset].lock().unwrap();
-          //self.projectiles[i-offset].update(delta_time);
-          projectile.update(delta_time);
-          projectile_should_exist = projectile.should_exist();
-        }
-        if !projectile_should_exist {
-          self.projectiles.remove(i-offset);
-          offset += 1;
-        }
-      }
-      
-      ship_pos = ship.position();
+    new_projectiles
+  }
+  
+  pub fn update_projectiles(&mut self, player_projectiles: Vec<BoxProjectile>, entity_projectiles: Vec<BoxProjectile>, delta_time: f32) {
+    // Projectiles 
+    for new_projectile in player_projectiles {
+      self.projectiles.push(Arc::new(Mutex::new(new_projectile)));
     }
     
-    // Check collisions 
-    // Spatial collision stuff
-    let _total_collision_checks = self.collision_checks;
-    self.collision_checks = 0;
-    self.spatial_hash_collision();
+    for new_projectile in entity_projectiles {
+      self.projectiles.push(Arc::new(Mutex::new(new_projectile)));
+    }
     
+    let mut offset = 0;
+    for i in 0..self.projectiles.len() {
+      if i < offset {
+        break;
+      }
+      
+      let projectile_should_exist;
+      {
+        let mut projectile = self.projectiles[i-offset].lock();
+        projectile.update(delta_time);
+        projectile_should_exist = projectile.should_exist();
+      }
+      if !projectile_should_exist {
+        self.projectiles.remove(i-offset);
+        offset += 1;
+      }
+    }
+  }
+  
+  pub fn update_camera(&mut self, dim: Vector2<f32>) {
+    let ship_pos = {let ship = self.ship.lock(); ship.position() };
     self.camera.window_resized(dim.x, dim.y);
     let camera_target = ship_pos*self.zoom - Vector2::new(dim.x*0.5, dim.y*0.5);
     self.camera.lerp_to_position(camera_target,  Vector2::new(0.05, 0.05));
+  }
+  /*
+  pub fn kdtree_collision(&mut self, all_entities: Vec<MutexEntity>) {
+    let mut all_positions: Vec<Vector2<f32>> = Vec::with_capacity(10000);
+    
+    for mutex_entity in &all_entities {
+      let entity = mutex_entity.lock();
+      all_positions.push(entity.position());
+    }
+    
+    self.kdtree = Node::create_kdtree(all_positions, 2, 0, 3);
+    
+    if let Some(kdtree) = &self.kdtree {
+      let boundry = kdtree.get_boundries();
+      for i in 0..self.projectiles.len() {
+        let mut projectile = self.projectiles[i].lock();
+        let projectile_pos = projectile.position();
+        if projectile_pos.x < boundry.x && projectile_pos.y < boundry.y || projectile_pos.x > boundry.z && projectile_pos.y < boundry.w  {
+          continue;
+        }
+        
+        let projectile_index = kdtree.get_depth_index(projectile.position(), 0, (0,0));
+        
+        if projectile.should_exist() {
+          // player collision
+          if projectile.can_hit(self.ship.hostility()) {
+            let ship_index = kdtree.get_depth_index(self.ship.position(), 0, (0,0));
+            if projectile_index == ship_index {
+              if self.ship.should_exist() {
+                self.collision_checks += 1;
+                projectile.collide_with(&mut self.ship);
+              }
+            }
+          }
+          
+          // enemy collision 
+          for enemy_mutex in &all_entities {
+            if !projectile.should_exist() {
+              break;
+            }
+            
+            let mut enemy = enemy_mutex.lock();
+            let enemy_index = kdtree.get_depth_index(enemy.position(), 0, (0,0));
+            if enemy_index == projectile_index {
+              if projectile.can_hit(enemy.hostility()) {
+                if enemy.should_exist() {
+                  self.collision_checks += 1;
+                  projectile.collide_with(&mut *enemy);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  pub fn spatial_hash_collision_projectiles(&mut self, all_entities: Vec<MutexEntity>, all_projectiles: Vec<MutexProjectile>) {
+    let mut spatial_hash = self.spatial_hash.lock();
+    for projectile in all_projectiles {
+      spatial_hash.insert_object_for_point(Arc::clone(&projectile));
+    }
+    
+    // player collision
+    if self.ship.should_exist() {
+      let mut projectiles = spatial_hash.retrieve_objects(&self.ship);
+      for mutex_projectile in &projectiles {
+        let mut projectile = mutex_projectile.lock();
+        if projectile.should_exist() {
+          if projectile.can_hit(self.ship.hostility()) {
+            self.collision_checks += 1;
+            projectile.collide_with(&mut self.ship);
+          }
+        }
+      }
+    }
+    
+    for i in 0..all_entities.len() {
+      let mut entity = all_entities[i].lock();
+      if entity.should_exist() {
+        // enemy collision 
+        let mut projectiles = spatial_hash.retrieve_objects(&*entity);
+        for mutex_projectile in &projectiles {
+          let mut projectile = mutex_projectile.lock();
+          if !projectile.should_exist() {
+            continue;
+          }
+          
+          if projectile.can_hit(entity.hostility()) {
+            self.collision_checks += 1;
+            projectile.collide_with(&mut *entity);
+          }
+        }
+      }
+    }
+    
+    spatial_hash.clear();
+  }*/
+  
+  pub fn spatial_hash_collision(&self) {
+    /*
+    let _all_entities: Vec<MutexEntity> = Vec::new();
+    
+    let mut spatial_hash = self.spatial_hash.lock();
+    spatial_hash.clear();
+    for area in &self.areas {
+      for mutex_entity in &area.entities() {
+        spatial_hash.insert_object_for_point(Arc::clone(&mutex_entity));
+      }
+    }
+    spatial_hash.insert_object_for_point(Arc::clone(&self.ship));
+    
+    for i in 0..self.projectiles.len() {
+      let mut projectile = self.projectiles[i].lock();
+      if projectile.should_exist() {
+        // entity collision 
+        let mut entities = spatial_hash.retrieve_objects(&*projectile);
+        for entity_mutex in &mut entities {
+          if !projectile.should_exist() {
+            break;
+          }
+          
+          let mut entity = entity_mutex.lock();
+          if entity.should_exist() {
+            if projectile.can_hit(entity.hostility()) {
+              projectile.collide_with(&mut *entity);
+            }
+          }
+        }
+      }
+    }
+    
+    let entity_groups = spatial_hash.retrieve_possible_entity_collisions();
+    for group in &entity_groups {
+      for i in 0..group.len() {
+        for j in i..group.len() {
+          if i == j {
+            continue;
+          }
+          let mut entity_one = group[i].lock();
+          let mut entity_two = group[j].lock();
+          
+          if entity_one.should_exist() && entity_two.should_exist() {
+            entity_one.collide_with(&mut *entity_two);
+            entity_two.collide_with(&mut *entity_one);
+          }
+        }
+      }
+    }
+    
+    spatial_hash.clear();*/
+  }
+  /*
+  pub fn brute_force_collision(&mut self, all_entities: Vec<MutexEntity>) {
+    for i in 0..self.projectiles.len() {
+      let mut projectile = self.projectiles[i].lock();
+      if projectile.should_exist() {
+        // player collision
+        if projectile.can_hit(self.ship.hostility()) {
+          if self.ship.should_exist() {
+            self.collision_checks += 1;
+            projectile.collide_with(&mut self.ship);
+          }
+        }
+        
+        // enemy collision 
+        for enemy_mutex in &all_entities {
+          if !projectile.should_exist() {
+            break;
+          }
+          
+          let mut enemy = enemy_mutex.lock();
+          if projectile.can_hit(enemy.hostility()) {
+            if enemy.should_exist() {
+              self.collision_checks += 1;
+              projectile.collide_with(&mut *enemy);
+            }
+          }
+        }
+      }
+    }
+  }*/
+}
+
+impl Scene for BenchmarkScreen {
+  fn data(&self) -> &SceneData {
+    &self.data
+  }
+  
+  fn mut_data(&mut self) -> &mut SceneData {
+    &mut self.data
+  }
+  
+  fn future_scene(&mut self, window_size: Vector2<f32>) -> Box<Scene> {
+    Box::new(BenchmarkScreen::recreate(window_size, self.camera.clone(), self.areas.clone(), self.ship.clone(), self.input.clone(), self.buffs.clone(), self.projectiles.clone(), self.zoom, self.all_fps.clone(), self.mouse_angle))
+  }
+  
+  fn update(&mut self, _ui: Option<&imgui::Ui>, _lua: Option<&mut Lua>, delta_time: f32) {
+    self.mut_data().controller.update();
+    
+    let dim = self.data().window_dim;
+    
+    self.mut_data().controller.update();
+    
+    let dim = self.data().window_dim;
+    
+    let escape_pressed = self.data.keys.escape_pressed() && !self.escape_pressed_last_frame;
+    let i_pressed = self.data.keys.i_pressed() && !self.i_pressed_last_frame;
+    
+    self.escape_pressed_last_frame = self.data().keys.escape_pressed();
+    self.i_pressed_last_frame = self.data().keys.i_pressed();
+    
+    self.update_camera(dim);
+    
+    if self.update_pause(dim, escape_pressed, delta_time) {
+      return;
+    }
+    
+    self.update_ui(dim, escape_pressed, i_pressed, delta_time);
+    
+    let player_projectiles = self.update_player(dim, delta_time);
+    let entity_projectiles = self.update_areas(dim, delta_time);
+    self.update_projectiles(player_projectiles, entity_projectiles, delta_time);
+    
+    if self.rx.try_recv().is_ok() {
+      let mut entities: Vec<MutexEntity> = Vec::new();
+      let mut projectiles: Vec<MutexProjectile> = Vec::new();
+      for area in &self.areas {
+        for mutex_entity in &area.entities() {
+          entities.push(Arc::clone(&mutex_entity));
+        }
+      }
+      entities.push(Arc::clone(&self.ship));
+      
+      for i in 0..self.projectiles.len() {
+        projectiles.push(Arc::clone(&self.projectiles[i]));
+      }
+      
+      let tx = self.tx.clone();
+      self.thread_pool.execute(move || {
+        collisions::collisions(entities, projectiles);
+        tx.send(()).unwrap();
+      });
+    }
   }
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
@@ -475,7 +626,7 @@ impl Scene for BenchmarkScreen {
     }
     
     for mutex_projectile in &self.projectiles {
-      let projectile = mutex_projectile.lock().unwrap();
+      let projectile = mutex_projectile.lock();
       projectile.draw(draw_calls);
     }
     
@@ -483,7 +634,7 @@ impl Scene for BenchmarkScreen {
       area.draw(draw_calls);
     }
     
-    let ship = self.ship.lock().unwrap();
+    let ship = self.ship.lock();
     ship.draw(draw_calls);
     
     draw_calls.push(DrawCall::draw_instanced("Astroid".to_string(), "Astroid".to_string()));

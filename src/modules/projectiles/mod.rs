@@ -17,10 +17,12 @@ use crate::modules::abilities::{BoxAbility};
 
 use crate::cgmath::{Vector2, Vector3, Vector4};
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+
+use parking_lot::Mutex;
 
 pub type MutexProjectile = Arc<Mutex<BoxProjectile>>;
-pub type BoxProjectile = Box<Projectile>;
+pub type BoxProjectile = Box<Projectile + Send>;
 
 #[derive(Clone)]
 pub struct ProjectileData {
@@ -123,17 +125,17 @@ impl ProjectileData {
 }
 
 pub trait ProjectileClone {
-  fn clone_weapon(&self) -> Box<Projectile>;
+  fn clone_weapon(&self) -> BoxProjectile;
 }
 
-impl<T: 'static + Projectile + Clone> ProjectileClone for T {
-  fn clone_weapon(&self) -> Box<Projectile> {
+impl<T: 'static + Projectile + Clone + Send + Sync> ProjectileClone for T {
+  fn clone_weapon(&self) -> BoxProjectile {
     Box::new(self.clone())
   }
 }
 
-impl Clone for Box<Projectile> {
-  fn clone(&self) -> Box<Projectile> {
+impl Clone for BoxProjectile {
+  fn clone(&self) -> BoxProjectile {
     self.clone_weapon()
   }
 }

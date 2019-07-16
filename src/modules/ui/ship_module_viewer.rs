@@ -38,7 +38,7 @@ impl ShipModuleViewer {
     let ship_section_colour = Vector4::new(0.2, 0.2, 0.2, 1.0);
     let _font = "Arial".to_string();
     
-    let ship = entity.lock().unwrap();
+    let ship = entity.lock();
     let ship_sections = ship.ship_sections();
     
     let background = ShipModuleViewer::create_background_image(window_size, background_colour);
@@ -188,7 +188,7 @@ impl Ui for ShipModuleViewer {
     let new_sizes;
     
     {
-      let ship = self.mutex_ship.lock().unwrap();
+      let ship = self.mutex_ship.lock();
       let ship_sections = ship.ship_sections();
       
       new_positions = ShipModuleViewer::updated_positions(window_size, ship_sections);

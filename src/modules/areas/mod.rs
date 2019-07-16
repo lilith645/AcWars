@@ -72,7 +72,7 @@ pub trait Area: AreaClone {
   /*
   fn collide_with(&mut self, projectile: &mut Box<Projectile>) {
     for object in &mut self.mut_data().entities {
-      let mut entity = object.entity.lock().unwrap();
+      let mut entity = object.entity.lock();
       if entity.should_exist() {
         if projectile.can_hit(entity.hostility()) {
           projectile.collide_with(&mut *entity);
@@ -90,15 +90,15 @@ pub trait Area: AreaClone {
           continue;
         }
         
-        let mut entity_i = self.data().entities[i].entity.lock().unwrap();
-        let mut entity_j = self.data().entities[j].entity.lock().unwrap();
+        let mut entity_i = self.data().entities[i].entity.lock();
+        let mut entity_j = self.data().entities[j].entity.lock();
         entity_i.collide_with(&mut *entity_j);
         //self.mut_data().entities[j].entity = entity;
       }
     }
     
     for i in 0..self.data().entities.len() {
-      let mut entity = self.mut_data().entities[i].entity.lock().unwrap();
+      let mut entity = self.mut_data().entities[i].entity.lock();
       entity.collide_with(ship);
     }
   }*/
@@ -113,7 +113,7 @@ pub trait Area: AreaClone {
     let area_pos = self.data().position;
     let area_size = self.data().size;
     for object in &mut self.mut_data().entities {
-      let mut entity = object.entity.lock().unwrap();
+      let mut entity = object.entity.lock();
       object.ai.update(&mut *entity, ship_pos, area_pos, area_size, window_size, delta_time);
       
       let mut offset = 0;
@@ -140,7 +140,7 @@ pub trait Area: AreaClone {
       
       let mut object_buffs;
       {
-        let mut entity = self.data().entities[i-offset].entity.lock().unwrap();
+        let mut entity = self.data().entities[i-offset].entity.lock();
         should_exist = entity.should_exist();
         let (temp_object_buffs, object_proj) = entity.update(delta_time);
         object_buffs = temp_object_buffs;
@@ -152,7 +152,7 @@ pub trait Area: AreaClone {
       
       for buff in object_buffs {
         {
-          let mut entity = self.data().entities[i-offset].entity.lock().unwrap();
+          let mut entity = self.data().entities[i-offset].entity.lock();
           buff.apply_buff(&mut *entity);
         }
         self.mut_data().entities[i-offset].buffs.push(buff);
@@ -169,21 +169,21 @@ pub trait Area: AreaClone {
   
   fn draw_ship_ui(&self, draw_calls: &mut Vec<DrawCall>) {
     for object in &self.data().entities {
-      let entity = object.entity.lock().unwrap();
+      let entity = object.entity.lock();
       entity.draw_ship_ui(draw_calls);
     }
   }
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
     for object in &self.data().entities {
-      let entity = object.entity.lock().unwrap();
+      let entity = object.entity.lock();
       entity.draw(draw_calls);
     }
   }
   
   fn draw_collision_circles(&self, draw_calls: &mut Vec<DrawCall>) {
     for object in &self.data().entities {
-      let entity = object.entity.lock().unwrap();
+      let entity = object.entity.lock();
       entity.draw_collision_circles(draw_calls);
     }
   }

@@ -30,7 +30,8 @@ impl LaserBeam {
       data: ProjectileData::new(position, size, texture.to_string(), sprite_rows, animation_timer)
                             .with_velocity(velocity)
                             .with_rotation(rot_degree)
-                            .with_damage(1.5),
+                            .with_damage(1.5)
+                            .with_life_time(0.11),
     }
   }
 }

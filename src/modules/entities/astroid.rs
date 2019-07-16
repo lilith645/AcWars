@@ -1,4 +1,4 @@
-use crate::modules::entities::{Entity, EntityData};
+use crate::modules::entities::{Entity, BoxEntity, EntityData};
 
 use crate::cgmath::Vector2;
 
@@ -53,7 +53,12 @@ impl Entity for Astroid {
     vec!((Vector2::new(0.0, 0.0), radius))
   }
   
-  fn collide_with(&mut self, entity: &mut Box<Entity>) {
-    self.entity_collision(entity, 0.5, 500.0);
+  fn collide_with(&mut self, entity: &mut BoxEntity) {
+    let dmg = if entity.texture() == self.texture() {
+      0.0
+    } else {
+      0.5
+    };
+    self.entity_collision(entity, dmg, 500.0);
   }
 }

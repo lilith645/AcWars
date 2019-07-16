@@ -7,7 +7,9 @@ use maat_graphics::DrawCall;
 
 use crate::cgmath::{Vector2, Vector4};
 
-use std::sync::{Arc, Mutex};
+use parking_lot::Mutex;
+
+use std::sync::Arc;
 
 const ABILITY_SWITCH_UI_INDEX: usize = 0;
 
@@ -51,7 +53,7 @@ impl AbilityUi {
     let cd_rm_ability;
     
     {
-      let ship = ship_abilities.lock().unwrap();
+      let ship = ship_abilities.lock();
       
       let textures = ship.get_ability_textures();
       
@@ -118,7 +120,7 @@ impl AbilityUi {
   pub fn create_ability_switch_ui(position: Vector2<f32>, ship_abilities: Arc<Mutex<player::Input>>, window_dim: Vector2<f32>) -> Box<Ui> {
     let ability_size = AbilityUi::get_ability_size(window_dim);
     
-    let ship = ship_abilities.lock().unwrap();
+    let ship = ship_abilities.lock();
     
     let all_abilities = ship.all_abilities();
     
@@ -212,7 +214,7 @@ impl Ui for AbilityUi {
     
     let mut cooldowns;
     {
-      let ship = self.ship_abilities.lock().unwrap();
+      let ship = self.ship_abilities.lock();
       cooldowns = ship.get_ability_cooldowns();
     }
     
@@ -232,7 +234,7 @@ impl Ui for AbilityUi {
       if new_ability_index != -1 {
         let textures;
         {
-          let mut ship = self.ship_abilities.lock().unwrap();
+          let mut ship = self.ship_abilities.lock();
           
           match self.data().widgets[RADIO_BUTTON_INDEX].external_option_value() {
             0 => {

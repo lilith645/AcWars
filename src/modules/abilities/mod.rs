@@ -35,7 +35,7 @@ use crate::modules::projectiles::{BoxProjectile};
 
 use crate::cgmath::{Vector2, Vector4};
 
-pub type BoxAbility = Box<Ability>;
+pub type BoxAbility = Box<Ability + Send + Sync>;
 
 #[derive(Clone, PartialEq)]
 pub enum AbilityType {
@@ -49,14 +49,8 @@ pub struct AbilityData {
   texture: String,
   timer: f32,
   time_left: f32,
-  passives: Vec<Box<Ability>>,
+  passives: Vec<BoxAbility>,
 }
-
-unsafe impl Send for AbilityData {
-}
-unsafe impl Sync for AbilityData {
-}
-
 
 impl AbilityData {
   pub fn new_active(texture: String, timer: f32) -> AbilityData {
@@ -81,17 +75,17 @@ impl AbilityData {
 }
 
 pub trait AbilityClone {
-  fn clone_ability(&self) -> Box<Ability>;
+  fn clone_ability(&self) -> BoxAbility;
 }
 
-impl<T: 'static + Ability + Clone> AbilityClone for T {
-  fn clone_ability(&self) -> Box<Ability> {
+impl<T: 'static + Ability + Clone + Send + Sync> AbilityClone for T {
+  fn clone_ability(&self) -> BoxAbility {
     Box::new(self.clone())
   }
 }
 
-impl Clone for Box<Ability> {
-  fn clone(&self) -> Box<Ability> {
+impl Clone for BoxAbility {
+  fn clone(&self) -> BoxAbility {
     self.clone_ability()
   }
 }
@@ -125,7 +119,7 @@ pub trait Ability: AbilityClone {
     }
   }
   
-  fn add_passive(&mut self, passive: Box<Ability>) {
+  fn add_passive(&mut self, passive: BoxAbility) {
     if passive.ability_type() == &AbilityType::Passive {
       self.mut_data().passives.push(passive);
     }

@@ -15,13 +15,16 @@ impl AstroidField {
   pub fn new(position: Vector2<f32>, size: Vector2<f32>) -> AstroidField {
     let reasonable_spawn_field = size*0.8;
     
-    let astroid_size = Vector2::new(reasonable_spawn_field.x/16.0, reasonable_spawn_field.y/16.0);
+    let astroid_size = (reasonable_spawn_field.x/32.0).max(25.0).min(100.0);
+    let astroid_size = Vector2::new(astroid_size, astroid_size);
+    
+    
     
     let mut astroids = Vec::new();
     
     let initial_pos = position-reasonable_spawn_field*0.5;
     
-    let iterations = 8;
+    let iterations = 20;
     
     for i in 0..iterations {
       for j in 0..iterations {

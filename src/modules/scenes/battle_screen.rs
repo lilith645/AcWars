@@ -5,7 +5,7 @@ use maat_graphics::imgui;
 use crate::modules::scenes::{Scene, SceneData, ShipSelectScreen};
 
 use crate::modules::buffs::{BoxBuff};
-use crate::modules::entities::{MutexEntity, BoxEntity};
+use crate::modules::entities::{Entity, MutexEntity, BoxEntity};
 use crate::modules::projectiles::{BoxProjectile, MutexProjectile};
 use crate::modules::areas::{BoxArea, SolarSystem, AstroidField};
 use crate::modules::player;
@@ -16,9 +16,15 @@ use crate::cgmath::{Vector2};
 
 use hlua::Lua;
 
-use std::sync::{Arc, Mutex};
+use parking_lot::Mutex;
+use std::sync::Arc;
 
 use crate::modules::spatial_hash::SpatialHash;
+use crate::modules::collisions;
+use maat_graphics::ThreadPool;
+use std::thread;
+use std::sync::mpsc;
+use std::sync::mpsc::channel;
 
 enum UiIndex {
   AbilityUi,
@@ -45,12 +51,15 @@ pub struct BattleScreen {
   escape_pressed_last_frame: bool, 
   i_pressed_last_frame: bool, 
   spatial_hash: Arc<Mutex<SpatialHash>>,
+  thread_pool: ThreadPool,
+  tx: mpsc::Sender<()>,
+  rx: mpsc::Receiver<()>,
 }
 
 impl BattleScreen {
   pub fn new(window_size: Vector2<f32>, mut ship: BoxEntity) -> BattleScreen {
     let solar_system: BoxArea = Box::new(SolarSystem::new(Vector2::new(-1500.0, 1500.0), Vector2::new(2000.0, 2000.0)));
-    let astroid_field: BoxArea = Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(2000.0, 2000.0)));
+    let astroid_field: BoxArea = Box::new(AstroidField::new(Vector2::new(1500.0, -1500.0), Vector2::new(5000.0, 5000.0)));
     
     ship.set_position(Vector2::new(540.0, 600.0));
     ship.set_max_shield(100.0);
@@ -58,10 +67,18 @@ impl BattleScreen {
     
     let player_input = Arc::new(Mutex::new(player::Input::new()));
     
-    let ship = Arc::new(Mutex::new(ship));
+    let ship: MutexEntity = Arc::new(Mutex::new(ship));
     let ability_ui = AbilityUi::new(Arc::clone(&player_input), window_size);
     
     let mut module_viewer = ShipModuleViewer::new(window_size, &ship);
+    
+    let (tx, rx) = mpsc::channel();
+    let thread_pool = ThreadPool::new(5);
+    let fake_tx = tx.clone();
+     thread_pool.execute(move || {
+          fake_tx.send(()).unwrap();
+    });
+    
     module_viewer.disable();
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()),
@@ -76,10 +93,14 @@ impl BattleScreen {
       escape_pressed_last_frame: false,
       i_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
+      thread_pool,
+      tx,
+      rx,
     }
   }
   
   pub fn recreate(window_size: Vector2<f32>, camera: OrthoCamera, areas: Vec<BoxArea>, ship: MutexEntity, input: Arc<Mutex<player::Input>>, buffs: Vec<BoxBuff>, projectiles: Vec<MutexProjectile>, uis: Vec<Box<Ui>>, zoom: f32) -> BattleScreen {
+    let (tx, rx) = mpsc::channel();
     BattleScreen {
       data: SceneData::new(window_size, Vec::new()), 
       areas,
@@ -93,11 +114,14 @@ impl BattleScreen {
       escape_pressed_last_frame: false,
       i_pressed_last_frame: false,
       spatial_hash: Arc::new(Mutex::new(SpatialHash::new(30.0))),
+      thread_pool: ThreadPool::new(5),
+      tx,
+      rx,
     }
   }
-  
+  /*
   pub fn spatial_hash_collision(&self) {
-    let mut spatial_hash = self.spatial_hash.lock().unwrap();
+    let mut spatial_hash = self.spatial_hash.lock();
     spatial_hash.clear();
     for area in &self.areas {
       for mutex_entity in &area.entities() {
@@ -107,7 +131,7 @@ impl BattleScreen {
     spatial_hash.insert_object_for_point(Arc::clone(&self.ship));
     
     for i in 0..self.projectiles.len() {
-      let mut projectile = self.projectiles[i].lock().unwrap();
+      let mut projectile = self.projectiles[i].lock();
       if projectile.should_exist() {
         // entity collision 
         let mut entities = spatial_hash.retrieve_objects(&*projectile);
@@ -116,7 +140,7 @@ impl BattleScreen {
             break;
           }
           
-          let mut entity = entity_mutex.lock().unwrap();
+          let mut entity = entity_mutex.lock();
           if entity.should_exist() {
             if projectile.can_hit(entity.hostility()) {
               projectile.collide_with(&mut *entity);
@@ -133,8 +157,8 @@ impl BattleScreen {
           if i == j {
             continue;
           }
-          let mut entity_one = group[i].lock().unwrap();
-          let mut entity_two = group[j].lock().unwrap();
+          let mut entity_one = group[i].lock();
+          let mut entity_two = group[j].lock();
           
           if entity_one.should_exist() && entity_two.should_exist() &&
              !entity_one.is_in_phase_mode() && !entity_two.is_in_phase_mode() {
@@ -159,7 +183,7 @@ impl BattleScreen {
     all_entities.push(Arc::clone(&self.ship));
     
     for i in 0..self.projectiles.len() {
-      let mut projectile = self.projectiles[i].lock().unwrap();
+      let mut projectile = self.projectiles[i].lock();
       
       // enemy collision 
       for enemy_mutex in &all_entities {
@@ -167,7 +191,7 @@ impl BattleScreen {
           break;
         }
         
-        let mut enemy = enemy_mutex.lock().unwrap();
+        let mut enemy = enemy_mutex.lock();
         if projectile.can_hit(enemy.hostility()) {
           if enemy.should_exist() {
             projectile.collide_with(&mut *enemy);
@@ -181,8 +205,8 @@ impl BattleScreen {
         if i == j {
           continue;
         }
-        let mut entity_one = all_entities[i].lock().unwrap();
-        let mut entity_two = all_entities[j].lock().unwrap();
+        let mut entity_one = all_entities[i].lock();
+        let mut entity_two = all_entities[j].lock();
         
         if entity_one.should_exist() && entity_two.should_exist() {
           entity_one.collide_with(&mut *entity_two);
@@ -190,7 +214,7 @@ impl BattleScreen {
         }
       }
     }
-  }
+  }*/
   
   pub fn update_pause(&mut self, dim: Vector2<f32>, escape_pressed: bool, delta_time: f32) -> bool {
     let mouse_pos = self.data().mouse_pos;
@@ -261,7 +285,7 @@ impl BattleScreen {
       self.mut_data().should_close = true;
     }
       
-    if should_next_scene || { let ship = self.ship.lock().unwrap(); !ship.should_exist() } {
+    if should_next_scene || { let ship = self.ship.lock(); !ship.should_exist() } {
       self.mut_data().next_scene = true;
     }
     
@@ -287,8 +311,8 @@ impl BattleScreen {
     let e_pressed = self.data.keys.e_pressed();
     let r_pressed = self.data.keys.r_pressed();
     
-    let mut ship = self.ship.lock().unwrap();
-    let mut player_input = self.input.lock().unwrap();
+    let mut ship = self.ship.lock();
+    let mut player_input = self.input.lock();
     player_input.update(&mut *ship, left_stick_position, xbox_a_button, right_trigger_pressed, 
                       mouse_pos, left_mouse, middle_mouse, right_mouse, q_pressed, w_pressed,
                       e_pressed, r_pressed, dim, delta_time);
@@ -316,7 +340,7 @@ impl BattleScreen {
   pub fn update_areas(&mut self, dim: Vector2<f32>, delta_time: f32) -> Vec<BoxProjectile> {
     let mut new_projectiles = Vec::new();
     
-    let mut ship = self.ship.lock().unwrap();
+    let mut ship = self.ship.lock();
     for area in &mut self.areas {
       let projectiles = area.update(&mut *ship, dim, delta_time);
       for projectile in projectiles {
@@ -345,7 +369,7 @@ impl BattleScreen {
       
       let projectile_should_exist;
       {
-        let mut projectile = self.projectiles[i-offset].lock().unwrap();
+        let mut projectile = self.projectiles[i-offset].lock();
         projectile.update(delta_time);
         projectile_should_exist = projectile.should_exist();
       }
@@ -357,7 +381,7 @@ impl BattleScreen {
   }
   
   pub fn update_camera(&mut self, dim: Vector2<f32>) {
-    let ship_pos = {let ship = self.ship.lock().unwrap(); ship.position() };
+    let ship_pos = {let ship = self.ship.lock(); ship.position() };
     self.camera.window_resized(dim.x, dim.y);
     let camera_target = ship_pos*self.zoom - Vector2::new(dim.x*0.5, dim.y*0.5);
     self.camera.lerp_to_position(camera_target,  Vector2::new(0.05, 0.05));
@@ -404,8 +428,26 @@ impl Scene for BattleScreen {
     let entity_projectiles = self.update_areas(dim, delta_time);
     self.update_projectiles(player_projectiles, entity_projectiles, delta_time);
     
-    // Check collisions 
-    self.spatial_hash_collision();
+    if self.rx.try_recv().is_ok() {
+      let mut entities: Vec<MutexEntity> = Vec::new();
+      let mut projectiles: Vec<MutexProjectile> = Vec::new();
+      for area in &self.areas {
+        for mutex_entity in &area.entities() {
+          entities.push(Arc::clone(&mutex_entity));
+        }
+      }
+      entities.push(Arc::clone(&self.ship));
+      
+      for i in 0..self.projectiles.len() {
+        projectiles.push(Arc::clone(&self.projectiles[i]));
+      }
+      
+      let tx = self.tx.clone();
+      self.thread_pool.execute(move || {
+        collisions::collisions(entities, projectiles);
+        tx.send(()).unwrap();
+      });
+    }
   }
   
   fn draw(&self, draw_calls: &mut Vec<DrawCall>) {
@@ -430,7 +472,7 @@ impl Scene for BattleScreen {
     }
     
     for mutex_projectile in &self.projectiles {
-      let projectile = mutex_projectile.lock().unwrap();
+      let projectile = mutex_projectile.lock();
       projectile.draw(draw_calls);
     }
     
@@ -438,7 +480,7 @@ impl Scene for BattleScreen {
       area.draw(draw_calls);
     }
     
-    let ship = self.ship.lock().unwrap();
+    let ship = self.ship.lock();
     ship.draw(draw_calls);
     
     draw_calls.push(DrawCall::draw_instanced("Astroid".to_string(), "Astroid".to_string()));
@@ -459,7 +501,7 @@ impl Scene for BattleScreen {
     
     /*
     for mutex_projectile in &self.projectiles {
-      let projectile = mutex_projectile.lock().unwrap();
+      let projectile = mutex_projectile.lock();
       projectile.draw_collision_circles(draw_calls);
     }
     for area in &self.areas {
